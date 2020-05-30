@@ -1,0 +1,87 @@
+﻿@page "/"
+@inject IJSRuntime JSRuntime;
+
+<button @onclick="Create">Create DB</button>
+<button @onclick="Add100">Add 100</button>
+<button @onclick="Update">Update</button>
+<button @onclick="Delete">Delete</button>
+<button @onclick="GetItem">Get Item</button>
+<button @onclick="AddWithCallback">Add With Callback</button>
+<button @onclick="DeleteDb">Delete DB</button>
+
+@code {
+    IndexedDBManager manager;
+    protected async Task Create()
+    {
+        Console.WriteLine("Create");
+        manager = new IndexedDBManager(new DbStore()
+        {
+            Name = "Test",
+            Version = 1,
+            StoreSchemas = new List<StoreSchema>()
+                {
+                    new StoreSchema()
+                    {
+                        Name = "Person",
+                        PrimaryKey = "id",
+                        PrimaryKeyAuto = true,
+                        UniqueIndexes = new List<string> { "name" }
+                    }
+                }
+        }, JSRuntime);
+        manager.ActionCompleted += (_, __) =>
+        {
+            Console.WriteLine(__.Message);
+        };
+        await manager.OpenDb();
+    }
+
+    protected async Task Add100()
+    {
+        for(var i = 0; i < 100; i++)
+        {
+            await manager.AddRecord(new StoreRecord<object>()
+                {
+                    StoreName = "Person",
+                    Record = new { Name = "MyName", Age = 20 }
+                });
+        }
+    }
+
+    protected async Task Update()
+    {
+        await manager.UpdateRecord(new UpdateRecord<object>()
+            {
+                StoreName = "Person",
+                Record = new { Name = "YourName", Age = 21 },
+                Key = 1
+            });
+    }
+
+    protected async Task AddWithCallback()
+    {
+        await manager.AddRecord(new StoreRecord<object>()
+                {
+                    StoreName = "Person",
+                    Record = new { Name = "MyName", Age = 20 }
+                }, (_) => {
+                    Console.WriteLine($"{_.Transaction}-{_.Failed}-{_.Message}");
+                });
+    }
+
+    protected async Task Delete()
+    {
+        await manager.DeleteRecord("Person", 2);
+    }
+
+    protected async Task GetItem()
+    {
+        var item = await manager.GetRecordById<int, object>("Person", 3);
+        Console.WriteLine(item);
+    }
+
+    protected async Task DeleteDb()
+    {
+        await manager.DeleteDb("Test");
+    }
+}

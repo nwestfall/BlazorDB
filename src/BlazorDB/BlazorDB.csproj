@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+	  <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <RazorLangVersion>3.0</RazorLangVersion>
+    <LangVersion>Latest</LangVersion>
+    <AssemblyName>BlazorDB</AssemblyName>
+    <Version>0.1.0</Version>
+    <Authors>Nathan Westfall</Authors>
+    <Description>A Blazor framework for interacting with IndexedDB</Description>
+    <RepositoryUrl>https://github.com/nwestfall/BlazorDB/</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Blazor IndexedDB</PackageTags>
+    <Copyright>Nathan Westfall</Copyright>
+    <licenseUrl>https://github.com/nwestfall/BlazorDB/blob/master/LICENSE</licenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageId>BlazorDB</PackageId>
+    <PackageIconUrl>https://github.com/nwestfall/BlazorDB/blob/master/logo.png?raw=true</PackageIconUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Browser" Version="3.0.0-preview6.19307.2" />
+    <PackageReference Include="Microsoft.JSInterop" Version="3.1.4" />
+  </ItemGroup>
+
+</Project>
