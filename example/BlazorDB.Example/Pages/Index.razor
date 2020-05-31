@@ -1,6 +1,23 @@
 ﻿@page "/"
 @inject IJSRuntime JSRuntime;
+@inject IBlazorDbFactory _dbFactory;
 
+<h1>Person</h1>
+<button @onclick="SwitchToPerson">Switch</button>
+<button @onclick="Create">Create DB</button>
+<button @onclick="Add100">Add 100</button>
+<button @onclick="Add100Async">Add 100 (Async)</button>
+<button @onclick="Update">Update</button>
+<button @onclick="UpdateAsync">Update (Async)</button>
+<button @onclick="Delete">Delete</button>
+<button @onclick="DeleteAsync">Delete (Async)</button>
+<button @onclick="GetItem">Get Item</button>
+<button @onclick="AddWithCallback">Add With Callback</button>
+<button @onclick="DeleteDb">Delete DB</button>
+
+
+<h1>Item</h1>
+<button @onclick="SwitchToItem">Switch</button>
 <button @onclick="Create">Create DB</button>
 <button @onclick="Add100">Add 100</button>
 <button @onclick="Add100Async">Add 100 (Async)</button>
@@ -13,31 +30,34 @@
 <button @onclick="DeleteDb">Delete DB</button>
 
 @code {
-    IndexedDBManager manager;
+    IndexedDbManager manager;
 
-    protected override void OnInitialized()
+    string dbName = "Test";
+    string storeName = "Person";
+
+    protected override async Task OnInitializedAsync()
     {
-        manager = new IndexedDBManager(new DbStore()
-        {
-            Name = "Test",
-            Version = 1,
-            StoreSchemas = new List<StoreSchema>()
-                {
-                    new StoreSchema()
-                    {
-                        Name = "Person",
-                        PrimaryKey = "id",
-                        PrimaryKeyAuto = true,
-                        UniqueIndexes = new List<string> { "name" }
-                    }
-                }
-        }, JSRuntime);
+        manager = await _dbFactory.GetDbManager(dbName);
         manager.ActionCompleted += (_, __) =>
         {
             Console.WriteLine(__.Message);
         };
     }
     
+    protected async void SwitchToItem()
+    {
+        dbName = "Test2";
+        storeName = "Item";
+        manager = await _dbFactory.GetDbManager(dbName);
+    }
+
+    protected async void SwitchToPerson()
+    {
+        dbName = "Test";
+        storeName = "Person";
+        manager = await _dbFactory.GetDbManager(dbName);
+    }
+
     protected async Task Create()
     {
         Console.WriteLine("Create");
@@ -50,7 +70,7 @@
         {
             await manager.AddRecord(new StoreRecord<object>()
                 {
-                    StoreName = "Person",
+                    StoreName = storeName,
                     Record = new { Name = "MyName", Age = 20 }
                 });
         }
@@ -62,7 +82,7 @@
         {
             await manager.AddRecordAsync(new StoreRecord<object>()
                 {
-                    StoreName = "Person",
+                    StoreName = storeName,
                     Record = new { Name = "MyName", Age = 20 }
                 });
         }
@@ -72,7 +92,7 @@
     {
         await manager.UpdateRecord(new UpdateRecord<object>()
             {
-                StoreName = "Person",
+                StoreName = storeName,
                 Record = new { Name = "YourName", Age = 21 },
                 Key = 1
             });
@@ -82,7 +102,7 @@
     {
         await manager.UpdateRecordAsync(new UpdateRecord<object>()
             {
-                StoreName = "Person",
+                StoreName = storeName,
                 Record = new { Name = "YourName", Age = 21 },
                 Key = 1
             });
@@ -92,7 +112,7 @@
     {
         await manager.AddRecord(new StoreRecord<object>()
                 {
-                    StoreName = "Person",
+                    StoreName = storeName,
                     Record = new { Name = "MyName", Age = 20 }
                 }, (_) => {
                     Console.WriteLine($"{_.Transaction}-{_.Failed}-{_.Message}");
@@ -101,22 +121,22 @@
 
     protected async Task Delete()
     {
-        await manager.DeleteRecord("Person", 2);
+        await manager.DeleteRecord(storeName, 2);
     }
 
     protected async Task DeleteAsync()
     {
-        await manager.DeleteRecordAsync("Person", 2);
+        await manager.DeleteRecordAsync(storeName, 2);
     }
 
     protected async Task GetItem()
     {
-        var item = await manager.GetRecordByIdAsync<int, object>("Person", 3);
+        var item = await manager.GetRecordByIdAsync<int, object>(storeName, 3);
         Console.WriteLine(item);
     }
 
     protected async Task DeleteDb()
     {
-        await manager.DeleteDb("Test");
+        await manager.DeleteDb(dbName);
     }
 }

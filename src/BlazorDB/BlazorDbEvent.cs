@@ -2,7 +2,7 @@ using System;
 
 namespace BlazorDB
 {
-    public class BlazorDBEvent
+    public class BlazorDbEvent
     {
         public Guid Transaction { get; set; }
         public bool Failed { get; set; }

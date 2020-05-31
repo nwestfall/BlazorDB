@@ -9,26 +9,26 @@ namespace BlazorDB
     /// <summary>
     /// Provides functionality for accessing IndexedDB from Blazor application
     /// </summary>
-    public class IndexedDBManager
+    public class IndexedDbManager
     {
         private readonly DbStore _dbStore;
         private readonly IJSRuntime _jsRuntime;
         private const string InteropPrefix = "window.blazorDB";
-        private DotNetObjectReference<IndexedDBManager> _objReference;
-        private IDictionary<Guid, WeakReference<Action<BlazorDBEvent>>> _transactions = new Dictionary<Guid, WeakReference<Action<BlazorDBEvent>>>();
-        private IDictionary<Guid, TaskCompletionSource<BlazorDBEvent>> _taskTransactions = new Dictionary<Guid, TaskCompletionSource<BlazorDBEvent>>();
+        private DotNetObjectReference<IndexedDbManager> _objReference;
+        private IDictionary<Guid, WeakReference<Action<BlazorDbEvent>>> _transactions = new Dictionary<Guid, WeakReference<Action<BlazorDbEvent>>>();
+        private IDictionary<Guid, TaskCompletionSource<BlazorDbEvent>> _taskTransactions = new Dictionary<Guid, TaskCompletionSource<BlazorDbEvent>>();
 
         /// <summary>
         /// A notification event that is raised when an action is completed
         /// </summary>
-        public event EventHandler<BlazorDBEvent> ActionCompleted;
+        public event EventHandler<BlazorDbEvent> ActionCompleted;
 
         /// <summary>
         /// Ctor
         /// </summary>
         /// <param name="dbStore"></param>
         /// <param name="jsRuntime"></param>
-        public IndexedDBManager(DbStore dbStore, IJSRuntime jsRuntime)
+        public IndexedDbManager(DbStore dbStore, IJSRuntime jsRuntime)
         {
             _objReference = DotNetObjectReference.Create(this);
             _dbStore = dbStore;
@@ -44,10 +44,10 @@ namespace BlazorDB
         /// and create the stores defined in DbStore.
         /// </summary>
         /// <returns></returns>
-        public async Task<Guid> OpenDb(Action<BlazorDBEvent> action = null)
+        public async Task<Guid> OpenDb(Action<BlazorDbEvent> action = null)
         {
             var trans = GenerateTransaction(action);
-            await CallJavascriptVoid(IndexedDBFunctions.CREATE_DB, trans, _dbStore);
+            await CallJavascriptVoid(IndexedDbFunctions.CREATE_DB, trans, _dbStore);
             return trans;
         }
 
@@ -56,14 +56,14 @@ namespace BlazorDB
         /// </summary>
         /// <param name="dbName">The name of database to delete</param>
         /// <returns></returns>
-        public async Task DeleteDb(string dbName, Action<BlazorDBEvent> action = null)
+        public async Task DeleteDb(string dbName, Action<BlazorDbEvent> action = null)
         {
             if (string.IsNullOrEmpty(dbName))
             {
                 throw new ArgumentException("dbName cannot be null or empty", nameof(dbName));
             }
             var trans = GenerateTransaction(action);
-            await CallJavascriptVoid(IndexedDBFunctions.DELETE_DB, trans, dbName);
+            await CallJavascriptVoid(IndexedDbFunctions.DELETE_DB, trans, dbName);
         }
 
         /// <summary>
@@ -72,14 +72,14 @@ namespace BlazorDB
         /// </summary>
         /// <param name="dbName">The name of database to delete</param>
         /// <returns></returns>
-        public async Task<BlazorDBEvent> DeleteDbAsync(string dbName)
+        public async Task<BlazorDbEvent> DeleteDbAsync(string dbName)
         {
             if (string.IsNullOrEmpty(dbName))
             {
                 throw new ArgumentException("dbName cannot be null or empty", nameof(dbName));
             }
             var trans = GenerateTransaction();
-            await CallJavascriptVoid(IndexedDBFunctions.DELETE_DB, trans.trans, dbName);
+            await CallJavascriptVoid(IndexedDbFunctions.DELETE_DB, trans.trans, dbName);
             return await trans.task;
         }
 
@@ -89,13 +89,13 @@ namespace BlazorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="recordToAdd">An instance of StoreRecord that provides the store name and the data to add</param>
         /// <returns></returns>
-        public async Task AddRecord<T>(StoreRecord<T> recordToAdd, Action<BlazorDBEvent> action = null)
+        public async Task AddRecord<T>(StoreRecord<T> recordToAdd, Action<BlazorDbEvent> action = null)
         {
             var trans = GenerateTransaction(action);
             try
             {
                 recordToAdd.DbName = DbName;
-                await CallJavascriptVoid(IndexedDBFunctions.ADD_ITEM, trans, recordToAdd);
+                await CallJavascriptVoid(IndexedDbFunctions.ADD_ITEM, trans, recordToAdd);
             }
             catch (JSException e)
             {
@@ -110,13 +110,13 @@ namespace BlazorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="recordToAdd">An instance of StoreRecord that provides the store name and the data to add</param>
         /// <returns></returns>
-        public async Task<BlazorDBEvent> AddRecordAsync<T>(StoreRecord<T> recordToAdd)
+        public async Task<BlazorDbEvent> AddRecordAsync<T>(StoreRecord<T> recordToAdd)
         {
             var trans = GenerateTransaction();
             try
             {
                 recordToAdd.DbName = DbName;
-                await CallJavascriptVoid(IndexedDBFunctions.ADD_ITEM, trans.trans, recordToAdd);
+                await CallJavascriptVoid(IndexedDbFunctions.ADD_ITEM, trans.trans, recordToAdd);
             }
             catch (JSException e)
             {
@@ -131,13 +131,13 @@ namespace BlazorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="recordToUpdate">An instance of UpdateRecord with the store name and the record to update</param>
         /// <returns></returns>
-        public async Task UpdateRecord<T>(UpdateRecord<T> recordToUpdate, Action<BlazorDBEvent> action = null)
+        public async Task UpdateRecord<T>(UpdateRecord<T> recordToUpdate, Action<BlazorDbEvent> action = null)
         {
             var trans = GenerateTransaction(action);
             try
             {
                 recordToUpdate.DbName = DbName;
-                await CallJavascriptVoid(IndexedDBFunctions.UPDATE_ITEM, trans, recordToUpdate);
+                await CallJavascriptVoid(IndexedDbFunctions.UPDATE_ITEM, trans, recordToUpdate);
             }
             catch (JSException jse)
             {
@@ -152,13 +152,13 @@ namespace BlazorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="recordToUpdate">An instance of UpdateRecord with the store name and the record to update</param>
         /// <returns></returns>
-        public async Task<BlazorDBEvent> UpdateRecordAsync<T>(UpdateRecord<T> recordToUpdate)
+        public async Task<BlazorDbEvent> UpdateRecordAsync<T>(UpdateRecord<T> recordToUpdate)
         {
             var trans = GenerateTransaction();
             try
             {
                 recordToUpdate.DbName = DbName;
-                await CallJavascriptVoid(IndexedDBFunctions.UPDATE_ITEM, trans.trans, recordToUpdate);
+                await CallJavascriptVoid(IndexedDbFunctions.UPDATE_ITEM, trans.trans, recordToUpdate);
             }
             catch (JSException jse)
             {
@@ -182,7 +182,7 @@ namespace BlazorDB
             var data = new { DbName = DbName, StoreName = storeName, Key = key };
             try
             {
-                return await CallJavascript<TResult>(IndexedDBFunctions.FIND_ITEM, trans, data);
+                return await CallJavascript<TResult>(IndexedDbFunctions.FIND_ITEM, trans, data);
             }
             catch (JSException jse)
             {
@@ -199,13 +199,13 @@ namespace BlazorDB
         /// <param name="storeName"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public async Task DeleteRecord<TInput>(string storeName, TInput key, Action<BlazorDBEvent> action = null)
+        public async Task DeleteRecord<TInput>(string storeName, TInput key, Action<BlazorDbEvent> action = null)
         {
             var trans = GenerateTransaction(action);
             var data = new { DbName = DbName, StoreName = storeName, Key = key };
             try
             {
-                await CallJavascriptVoid(IndexedDBFunctions.DELETE_ITEM, trans, data);
+                await CallJavascriptVoid(IndexedDbFunctions.DELETE_ITEM, trans, data);
             }
             catch (JSException jse)
             {
@@ -221,13 +221,13 @@ namespace BlazorDB
         /// <param name="storeName"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public async Task<BlazorDBEvent> DeleteRecordAsync<TInput>(string storeName, TInput key)
+        public async Task<BlazorDbEvent> DeleteRecordAsync<TInput>(string storeName, TInput key)
         {
             var trans = GenerateTransaction();
             var data = new { DbName = DbName, StoreName = storeName, Key = key };
             try
             {
-                await CallJavascriptVoid(IndexedDBFunctions.DELETE_ITEM, trans.trans, data);
+                await CallJavascriptVoid(IndexedDbFunctions.DELETE_ITEM, trans.trans, data);
             }
             catch (JSException jse)
             {
@@ -241,13 +241,13 @@ namespace BlazorDB
         {
             if(transaction != Guid.Empty)
             {
-                WeakReference<Action<BlazorDBEvent>> r = null;
+                WeakReference<Action<BlazorDbEvent>> r = null;
                 _transactions.TryGetValue(transaction, out r);
-                TaskCompletionSource<BlazorDBEvent> t = null;
+                TaskCompletionSource<BlazorDbEvent> t = null;
                 _taskTransactions.TryGetValue(transaction, out t);
-                if(r != null && r.TryGetTarget(out Action<BlazorDBEvent> action))
+                if(r != null && r.TryGetTarget(out Action<BlazorDbEvent> action))
                 {
-                    action?.Invoke(new BlazorDBEvent()
+                    action?.Invoke(new BlazorDbEvent()
                     {
                         Transaction = transaction,
                         Message = message,
@@ -257,7 +257,7 @@ namespace BlazorDB
                 }
                 else if(t != null)
                 {
-                    t.TrySetResult(new BlazorDBEvent()
+                    t.TrySetResult(new BlazorDbEvent()
                     {
                         Transaction = transaction,
                         Message = message,
@@ -291,11 +291,11 @@ namespace BlazorDB
             return newArgs;
         }
 
-        private (Guid trans, Task<BlazorDBEvent> task) GenerateTransaction()
+        private (Guid trans, Task<BlazorDbEvent> task) GenerateTransaction()
         {
             bool generated = false;
             var transaction = Guid.Empty;
-            TaskCompletionSource<BlazorDBEvent> tcs = new TaskCompletionSource<BlazorDBEvent>();
+            TaskCompletionSource<BlazorDbEvent> tcs = new TaskCompletionSource<BlazorDbEvent>();
             do
             {
                 transaction = Guid.NewGuid();
@@ -308,7 +308,7 @@ namespace BlazorDB
             return (transaction, tcs.Task);
         }
 
-        private Guid GenerateTransaction(Action<BlazorDBEvent> action)
+        private Guid GenerateTransaction(Action<BlazorDbEvent> action)
         {
             bool generated = false;
             Guid transaction = Guid.Empty;
@@ -318,13 +318,13 @@ namespace BlazorDB
                 if(!_transactions.ContainsKey(transaction))
                 {
                     generated = true;
-                    _transactions.Add(transaction, new WeakReference<Action<BlazorDBEvent>>(action));
+                    _transactions.Add(transaction, new WeakReference<Action<BlazorDbEvent>>(action));
                 }
             } while(!generated);
             return transaction;
         }
 
         private void RaiseEvent(Guid transaction, bool failed, string message)
-            => ActionCompleted?.Invoke(this, new BlazorDBEvent { Transaction = transaction, Failed = failed, Message = message });
+            => ActionCompleted?.Invoke(this, new BlazorDbEvent { Transaction = transaction, Failed = failed, Message = message });
     }
 }

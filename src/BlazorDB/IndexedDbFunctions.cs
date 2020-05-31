@@ -1,6 +1,6 @@
 namespace BlazorDB
 {
-    internal struct IndexedDBFunctions
+    internal struct IndexedDbFunctions
     {
         public const string CREATE_DB = "createDb";
         public const string DELETE_DB = "deleteDb";
