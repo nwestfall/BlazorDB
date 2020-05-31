@@ -7,7 +7,7 @@
     <RazorLangVersion>3.0</RazorLangVersion>
     <LangVersion>Latest</LangVersion>
     <AssemblyName>BlazorDB</AssemblyName>
-    <Version>0.1.0</Version>
+    <Version>$(Version)</Version>
     <Authors>Nathan Westfall</Authors>
     <Description>A Blazor framework for interacting with IndexedDB</Description>
     <RepositoryUrl>https://github.com/nwestfall/BlazorDB/</RepositoryUrl>
