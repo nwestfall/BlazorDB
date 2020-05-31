@@ -5,7 +5,7 @@ Forked from (https://github.com/Reshiru/Blazor.IndexedDB.Framework)[https://gith
 An easy, fast way to use IndexedDB in a Blazor application.
 
 ### How to Use (WASM)
- - Install `dotnet add package BlazorDB`
+ - Install `dotnet add package BlazorIndexedDB`
  - Add `.js` files to `index.html`
     ```js
     <script src="_content/BlazorDB/dexie.min.js"></script>

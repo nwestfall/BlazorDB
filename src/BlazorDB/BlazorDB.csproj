@@ -16,7 +16,7 @@
     <Copyright>Nathan Westfall</Copyright>
     <licenseUrl>https://github.com/nwestfall/BlazorDB/blob/master/LICENSE</licenseUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageId>BlazorDB</PackageId>
+    <PackageId>BlazorIndexedDB</PackageId>
     <PackageIconUrl>https://github.com/nwestfall/BlazorDB/blob/master/logo.png?raw=true</PackageIconUrl>
   </PropertyGroup>
 
