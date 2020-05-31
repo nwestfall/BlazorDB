@@ -18,4 +18,4 @@ jobs:
     - name: Install dependencies
       run: dotnet restore src/BlazorDB/BlazorDB.csproj
     - name: Build
-      run: dotnet build --configuration Release --no-restore /src/BlazorDB/BlazorDB.csproj
+      run: dotnet build --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
