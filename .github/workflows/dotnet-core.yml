@@ -19,7 +19,7 @@ jobs:
         dotnet-version: 3.1.101
     - name: Get the version
       id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/\v/}
     - name: Install dependencies
       run: dotnet restore src/BlazorDB/BlazorDB.csproj
     - name: Build
