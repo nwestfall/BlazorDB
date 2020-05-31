@@ -1,0 +1,39 @@
+name: .NET Core
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Install dependencies
+      run: dotnet restore src/BlazorDB/BlazorDB.csproj
+    - name: Build
+      run: dotnet build /p:Version="${{ github.ref }}" --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
+    - name: Package
+      run: dotnet pack /p:Version="${{ github.ref }}" --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
+    - name: Publish NuGet
+      uses: brandedoutcast/publish-nuget@v2.5.2
+      with:
+        NUGET_KEY: ${{ secrets.NUGET_KEY }}
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
