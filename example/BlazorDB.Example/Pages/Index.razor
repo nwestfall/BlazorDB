@@ -3,17 +3,20 @@
 
 <button @onclick="Create">Create DB</button>
 <button @onclick="Add100">Add 100</button>
+<button @onclick="Add100Async">Add 100 (Async)</button>
 <button @onclick="Update">Update</button>
+<button @onclick="UpdateAsync">Update (Async)</button>
 <button @onclick="Delete">Delete</button>
+<button @onclick="DeleteAsync">Delete (Async)</button>
 <button @onclick="GetItem">Get Item</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
 
 @code {
     IndexedDBManager manager;
-    protected async Task Create()
+
+    protected override void OnInitialized()
     {
-        Console.WriteLine("Create");
         manager = new IndexedDBManager(new DbStore()
         {
             Name = "Test",
@@ -33,6 +36,11 @@
         {
             Console.WriteLine(__.Message);
         };
+    }
+    
+    protected async Task Create()
+    {
+        Console.WriteLine("Create");
         await manager.OpenDb();
     }
 
@@ -48,9 +56,31 @@
         }
     }
 
+    protected async Task Add100Async()
+    {
+        for(var i = 0; i < 100; i++)
+        {
+            await manager.AddRecordAsync(new StoreRecord<object>()
+                {
+                    StoreName = "Person",
+                    Record = new { Name = "MyName", Age = 20 }
+                });
+        }
+    }
+
     protected async Task Update()
     {
         await manager.UpdateRecord(new UpdateRecord<object>()
+            {
+                StoreName = "Person",
+                Record = new { Name = "YourName", Age = 21 },
+                Key = 1
+            });
+    }
+
+    protected async Task UpdateAsync()
+    {
+        await manager.UpdateRecordAsync(new UpdateRecord<object>()
             {
                 StoreName = "Person",
                 Record = new { Name = "YourName", Age = 21 },
@@ -74,9 +104,14 @@
         await manager.DeleteRecord("Person", 2);
     }
 
+    protected async Task DeleteAsync()
+    {
+        await manager.DeleteRecordAsync("Person", 2);
+    }
+
     protected async Task GetItem()
     {
-        var item = await manager.GetRecordById<int, object>("Person", 3);
+        var item = await manager.GetRecordByIdAsync<int, object>("Person", 3);
         Console.WriteLine(item);
     }
 

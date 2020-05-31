@@ -42,67 +42,94 @@ window.blazorDB = {
         });
     },
     deleteDb: function(dotnetReference, transaction, dbName) {
-        var db = window.blazorDB.getDb(dbName);
-        var index = window.blazorDB.databases.findIndex(d => d.name == dbName);
-        window.blazorDB.databases.splice(index, 1);
-        db.delete().then(_ => {
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Database deleted');
-        }).catch(e => {
-            console.error(e);
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Database could not be deleted');
-        })
+        window.blazorDB.getDb(dbName).then(db => {
+            var index = window.blazorDB.databases.findIndex(d => d.name == dbName);
+            window.blazorDB.databases.splice(index, 1);
+            db.delete().then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Database deleted');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Database could not be deleted');
+            });
+        });
     },
     addItem: function(dotnetReference, transaction, item) {
-        var table = window.blazorDB.getTable(item.dbName, item.storeName);
-        table.add(item.record).then(_ => {
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item added');
-        }).catch(e => {
-            console.error(e);
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item could not be added');
-        })
+        window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+            table.add(item.record).then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item added');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item could not be added');
+            });
+        });
     },
     updateItem: function(dotnetReference, transaction, item) {
-        var table = window.blazorDB.getTable(item.dbName, item.storeName);
-        table.update(item.key, item.record).then(_ => {
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item updated');
-        }).catch(e => {
-            console.error(e);
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item could not be updated');
+        window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+            table.update(item.key, item.record).then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item updated');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item could not be updated');
+            });
         });
     },
     deleteItem: function(dotnetReference, transaction, item) {
-        var table = window.blazorDB.getTable(item.dbName, item.storeName);
-        table.delete(item.key).then(_ => {
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item deleted');
-        }).catch(e => {
-            console.error(e);
-            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item could not be deleted');
-        })
-    },
-    findItem: function(dotnetReference, transaction, item) {
-        var table = window.blazorDB.getTable(item.dbName, item.storeName);
-        var promise = new Promise((resolve, reject) => {
-            table.get(item.key).then(_ => {
-                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Found item');
-                resolve(_);
+        window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+            table.delete(item.key).then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item deleted');
             }).catch(e => {
                 console.error(e);
-                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Could not find item');
-                reject(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item could not be deleted');
+            });
+        });
+    },
+    findItem: function(dotnetReference, transaction, item) {
+        var promise = new Promise((resolve, reject) => {
+            window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+                table.get(item.key).then(_ => {
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Found item');
+                    resolve(_);
+                }).catch(e => {
+                    console.error(e);
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Could not find item');
+                    reject(e);
+                });
             });
         });
         return promise;
     },
     getDb: function(dbName) {
-        if(window.blazorDB.databases.find(d => d.name == dbName) === undefined)
-            console.warn("Blazor.IndexedDB.Framework - Database doesn't exist");
-        
-        var db = window.blazorDB.databases.find(d => d.name == dbName).db;
-        return db;
+        return new Promise((resolve, reject) => {
+            if(window.blazorDB.databases.find(d => d.name == dbName) === undefined) {
+                console.warn("Blazor.IndexedDB.Framework - Database doesn't exist");
+                var db1 = new Dexie(dbName);
+                db1.open().then(function (db) {
+                    if(window.blazorDB.databases.find(d => d.name == dbName) !== undefined) {
+                        window.blazorDB.databases.find(d => d.name == dbName).db = db1;
+                    } else {
+                        window.blazorDB.databases.push({
+                            name: dbName,
+                            db: db1
+                        });
+                    }
+                    resolve(db1);
+                }).catch('NoSuchDatabaseError', function(e) {
+                    // Database with that name did not exist
+                    console.error ("Database not found");
+                    reject("No database");
+                });
+            } else {
+                var db = window.blazorDB.databases.find(d => d.name == dbName).db;
+                resolve(db);
+            }
+        });
     },
     getTable: function(dbName, storeName) {
-        var db = window.blazorDB.getDb(dbName);
-        var table = db[storeName];
-        return table;
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getDb(dbName).then(db => {
+                var table = db.table(storeName);
+                resolve(table);
+            });
+        });
     }
 }

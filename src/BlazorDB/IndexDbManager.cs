@@ -14,15 +14,20 @@ namespace BlazorDB
         private readonly DbStore _dbStore;
         private readonly IJSRuntime _jsRuntime;
         private const string InteropPrefix = "window.blazorDB";
-        private bool _isOpen;
         private DotNetObjectReference<IndexedDBManager> _objReference;
         private IDictionary<Guid, WeakReference<Action<BlazorDBEvent>>> _transactions = new Dictionary<Guid, WeakReference<Action<BlazorDBEvent>>>();
+        private IDictionary<Guid, TaskCompletionSource<BlazorDBEvent>> _taskTransactions = new Dictionary<Guid, TaskCompletionSource<BlazorDBEvent>>();
 
         /// <summary>
         /// A notification event that is raised when an action is completed
         /// </summary>
         public event EventHandler<BlazorDBEvent> ActionCompleted;
 
+        /// <summary>
+        /// Ctor
+        /// </summary>
+        /// <param name="dbStore"></param>
+        /// <param name="jsRuntime"></param>
         public IndexedDBManager(DbStore dbStore, IJSRuntime jsRuntime)
         {
             _objReference = DotNetObjectReference.Create(this);
@@ -43,7 +48,6 @@ namespace BlazorDB
         {
             var trans = GenerateTransaction(action);
             await CallJavascriptVoid(IndexedDBFunctions.CREATE_DB, trans, _dbStore);
-            _isOpen = true;
             return trans;
         }
 
@@ -63,6 +67,23 @@ namespace BlazorDB
         }
 
         /// <summary>
+        /// Deletes the database corresponding to the dbName passed in
+        /// Waits for response
+        /// </summary>
+        /// <param name="dbName">The name of database to delete</param>
+        /// <returns></returns>
+        public async Task<BlazorDBEvent> DeleteDbAsync(string dbName)
+        {
+            if (string.IsNullOrEmpty(dbName))
+            {
+                throw new ArgumentException("dbName cannot be null or empty", nameof(dbName));
+            }
+            var trans = GenerateTransaction();
+            await CallJavascriptVoid(IndexedDBFunctions.DELETE_DB, trans.trans, dbName);
+            return await trans.task;
+        }
+
+        /// <summary>
         /// Adds a new record/object to the specified store
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -71,7 +92,6 @@ namespace BlazorDB
         public async Task AddRecord<T>(StoreRecord<T> recordToAdd, Action<BlazorDBEvent> action = null)
         {
             var trans = GenerateTransaction(action);
-            await EnsureDbOpen(trans);
             try
             {
                 recordToAdd.DbName = DbName;
@@ -79,8 +99,30 @@ namespace BlazorDB
             }
             catch (JSException e)
             {
-                //RaiseNotification(IndexDBActionOutCome.Failed, e.Message);
+                RaiseEvent(trans, true, e.Message);
             }
+        }
+
+        /// <summary>
+        /// Adds a new record/object to the specified store
+        /// Waits for response
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordToAdd">An instance of StoreRecord that provides the store name and the data to add</param>
+        /// <returns></returns>
+        public async Task<BlazorDBEvent> AddRecordAsync<T>(StoreRecord<T> recordToAdd)
+        {
+            var trans = GenerateTransaction();
+            try
+            {
+                recordToAdd.DbName = DbName;
+                await CallJavascriptVoid(IndexedDBFunctions.ADD_ITEM, trans.trans, recordToAdd);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans.trans, true, e.Message);
+            }
+            return await trans.task;
         }
 
         /// <summary>
@@ -92,17 +134,37 @@ namespace BlazorDB
         public async Task UpdateRecord<T>(UpdateRecord<T> recordToUpdate, Action<BlazorDBEvent> action = null)
         {
             var trans = GenerateTransaction(action);
-            await EnsureDbOpen(trans);
             try
             {
                 recordToUpdate.DbName = DbName;
                 await CallJavascriptVoid(IndexedDBFunctions.UPDATE_ITEM, trans, recordToUpdate);
-                //RaiseNotification(IndexDBActionOutCome.Successful, result);
             }
             catch (JSException jse)
             {
-                //RaiseNotification(IndexDBActionOutCome.Failed, jse.Message);
+                RaiseEvent(trans, true, jse.Message);
             }
+        }
+
+        /// <summary>
+        /// Updates and existing record
+        /// Waits for response
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordToUpdate">An instance of UpdateRecord with the store name and the record to update</param>
+        /// <returns></returns>
+        public async Task<BlazorDBEvent> UpdateRecordAsync<T>(UpdateRecord<T> recordToUpdate)
+        {
+            var trans = GenerateTransaction();
+            try
+            {
+                recordToUpdate.DbName = DbName;
+                await CallJavascriptVoid(IndexedDBFunctions.UPDATE_ITEM, trans.trans, recordToUpdate);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans.trans, true, jse.Message);
+            }
+            return await trans.task;
         }
 
         /// <summary>
@@ -113,10 +175,9 @@ namespace BlazorDB
         /// <param name="storeName">The name of the  store to retrieve the record from</param>
         /// <param name="id">the id of the record</param>
         /// <returns></returns>
-        public async Task<TResult> GetRecordById<TInput, TResult>(string storeName, TInput key, Action<BlazorDBEvent> action = null)
+        public async Task<TResult> GetRecordByIdAsync<TInput, TResult>(string storeName, TInput key)
         {
-            var trans = GenerateTransaction(action);
-            await EnsureDbOpen(trans);
+            var trans = GenerateTransaction(null);
 
             var data = new { DbName = DbName, StoreName = storeName, Key = key };
             try
@@ -125,6 +186,7 @@ namespace BlazorDB
             }
             catch (JSException jse)
             {
+                RaiseEvent(trans, true, jse.Message);
             }
 
             return default(TResult);
@@ -144,12 +206,34 @@ namespace BlazorDB
             try
             {
                 await CallJavascriptVoid(IndexedDBFunctions.DELETE_ITEM, trans, data);
-                //RaiseNotification(IndexDBActionOutCome.Deleted, $"Deleted from {storeName} record: {key}");
             }
             catch (JSException jse)
             {
-                //RaiseNotification(IndexDBActionOutCome.Failed, jse.Message);
+                RaiseEvent(trans, true, jse.Message);
             }
+        }
+
+        /// <summary>
+        /// Deletes a record from the store based on the id
+        /// Wait for response
+        /// </summary>
+        /// <typeparam name="TInput"></typeparam>
+        /// <param name="storeName"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<BlazorDBEvent> DeleteRecordAsync<TInput>(string storeName, TInput key)
+        {
+            var trans = GenerateTransaction();
+            var data = new { DbName = DbName, StoreName = storeName, Key = key };
+            try
+            {
+                await CallJavascriptVoid(IndexedDBFunctions.DELETE_ITEM, trans.trans, data);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans.trans, true, jse.Message);
+            }
+            return await trans.task;
         }
 
         [JSInvokable("BlazorDBCallback")]
@@ -157,7 +241,10 @@ namespace BlazorDB
         {
             if(transaction != Guid.Empty)
             {
-                var r = _transactions[transaction];
+                WeakReference<Action<BlazorDBEvent>> r = null;
+                _transactions.TryGetValue(transaction, out r);
+                TaskCompletionSource<BlazorDBEvent> t = null;
+                _taskTransactions.TryGetValue(transaction, out t);
                 if(r != null && r.TryGetTarget(out Action<BlazorDBEvent> action))
                 {
                     action?.Invoke(new BlazorDBEvent()
@@ -166,11 +253,20 @@ namespace BlazorDB
                         Message = message,
                         Failed = failed
                     });
+                    _transactions.Remove(transaction);
+                }
+                else if(t != null)
+                {
+                    t.TrySetResult(new BlazorDBEvent()
+                    {
+                        Transaction = transaction,
+                        Message = message,
+                        Failed = failed
+                    });
+                    _taskTransactions.Remove(transaction);
                 }
                 else
                     RaiseEvent(transaction, failed, message);
-
-                _transactions.Remove(transaction);
             }
         }
 
@@ -195,13 +291,21 @@ namespace BlazorDB
             return newArgs;
         }
 
-        private async Task EnsureDbOpen(Guid transaction)
+        private (Guid trans, Task<BlazorDBEvent> task) GenerateTransaction()
         {
-            if (!_isOpen)
+            bool generated = false;
+            var transaction = Guid.Empty;
+            TaskCompletionSource<BlazorDBEvent> tcs = new TaskCompletionSource<BlazorDBEvent>();
+            do
             {
-                await CallJavascriptVoid(IndexedDBFunctions.CREATE_DB, transaction, _dbStore);
-                _isOpen = true;
-            }
+                transaction = Guid.NewGuid();
+                if(!_taskTransactions.ContainsKey(transaction))
+                {
+                    generated = true;
+                    _taskTransactions.Add(transaction, tcs);
+                }
+            } while(!generated);
+            return (transaction, tcs.Task);
         }
 
         private Guid GenerateTransaction(Action<BlazorDBEvent> action)
