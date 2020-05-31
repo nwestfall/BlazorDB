@@ -27,7 +27,7 @@ jobs:
     - name: Package
       run: dotnet pack /p:Version="${{ steps.get_version.outputs.VERSION }}" --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
     - name: Publish NuGet
-      run: dotnet nuget push BlazorDB.${{ steps.get_version.outputs.VERSION }}.nupkg -k ${{ secrets.NUGET_KEY }} -s ${{ github.workspace }}/src/BlazorDB/bin/Release
+      run: dotnet nuget push ${{ github.workspace }}/src/BlazorDB/bin/Release/BlazorDB.${{ steps.get_version.outputs.VERSION }}.nupkg -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
     - name: Create Release
       id: create_release
       uses: actions/create-release@latest
