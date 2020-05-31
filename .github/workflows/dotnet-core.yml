@@ -17,12 +17,15 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.101
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
     - name: Install dependencies
       run: dotnet restore src/BlazorDB/BlazorDB.csproj
     - name: Build
-      run: dotnet build /p:Version="${{ github.ref }}" --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
+      run: dotnet build /p:Version="${{ steps.get_version.outputs.VERSION }}" --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
     - name: Package
-      run: dotnet pack /p:Version="${{ github.ref }}" --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
+      run: dotnet pack /p:Version="${{ steps.get_version.outputs.VERSION }}" --configuration Release --no-restore src/BlazorDB/BlazorDB.csproj
     - name: Publish NuGet
       uses: brandedoutcast/publish-nuget@v2.5.2
       with:
