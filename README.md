@@ -8,8 +8,8 @@ An easy, fast way to use IndexedDB in a Blazor application.
  - Install `dotnet add package BlazorIndexedDB`
  - Add `.js` files to `index.html`
     ```js
-    <script src="_content/BlazorDB/dexie.min.js"></script>
-    <script src="_content/BlazorDB/blazorDB.js"></script>
+    <script src="_content/BlazorIndexedDB/dexie.min.js"></script>
+    <script src="_content/BlazorIndexedDB/blazorDB.js"></script>
     ```
  - Add '@using BlazorDB` to `_Imports.razor`
  - Update `Program.cs` `ServiceCollection` with new databases (can add as many databases as you want)
