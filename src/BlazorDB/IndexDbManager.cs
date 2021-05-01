@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -259,7 +259,7 @@ namespace BlazorDB
         /// </summary>
         /// <typeparam name="TInput"></typeparam>
         /// <typeparam name="TResult"></typeparam>
-        /// <param name="storeName">The name of the  store to retrieve the record from</param>
+        /// <param name="storeName">The name of the store to retrieve the record from</param>
         /// <param name="id">the id of the record</param>
         /// <returns></returns>
         public async Task<TResult> GetRecordByIdAsync<TInput, TResult>(string storeName, TInput key)
@@ -277,6 +277,28 @@ namespace BlazorDB
             }
 
             return default(TResult);
+        }
+        
+        /// <summary>
+        /// Retrieve all the records in a store
+        /// </summary>
+        /// <typeparam name="TRecord"></typeparam>
+        /// <param name="storeName">The name of the store to retrieve the records from</param>
+        /// <returns></returns>
+        public async Task<IList<TRecord>> ToArray<TRecord>(string storeName)
+        {
+            var trans = GenerateTransaction(null);
+
+            try
+            {
+                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.TOARRAY, trans, DbName, storeName);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+
+            return default;
         }
         
         /// <summary>

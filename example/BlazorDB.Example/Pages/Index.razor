@@ -16,6 +16,7 @@
 <button @onclick="Delete">Delete</button>
 <button @onclick="DeleteAsync">Delete (Async)</button>
 <button @onclick="GetItem">Get Item</button>
+<button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
 
@@ -34,6 +35,7 @@
 <button @onclick="Delete">Delete</button>
 <button @onclick="DeleteAsync">Delete (Async)</button>
 <button @onclick="GetItem">Get Item</button>
+<button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
 
@@ -171,6 +173,15 @@
     {
         var item = await manager.GetRecordByIdAsync<int, object>(storeName, 3);
         Console.WriteLine(item);
+    }
+
+    protected async Task ToArray()
+    {
+        var items = await manager.ToArray<object>(storeName);
+        foreach (var item in items.Take(10)) {
+            Console.WriteLine(item);
+        }
+        Console.WriteLine($"Got {items.Count()} items.");
     }
 
     protected async Task DeleteDb()
