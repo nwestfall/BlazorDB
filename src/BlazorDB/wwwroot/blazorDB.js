@@ -63,6 +63,16 @@ window.blazorDB = {
             });
         });
     },
+    putItem: function(dotnetReference, transaction, item) {
+        window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+            table.put(item.record).then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item put successful');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item put failed');
+            });
+        });
+    },
     updateItem: function(dotnetReference, transaction, item) {
         window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
             table.update(item.key, item.record).then(_ => {
