@@ -128,6 +128,47 @@ namespace BlazorDB
         }
 
         /// <summary>
+        /// Adds records/objects to the specified store in bulk
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordsToBulkAdd">The data to add</param>
+        /// <returns></returns>
+        public async Task<Guid> BulkAddRecord<T>(string storeName, IEnumerable<T> recordsToBulkAdd, Action<BlazorDbEvent> action = null)
+        {
+            var trans = GenerateTransaction(action);
+            try
+            {
+                await CallJavascriptVoid(IndexedDbFunctions.BULKADD_ITEM, trans, DbName, storeName, recordsToBulkAdd);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans, true, e.Message);
+            }
+            return trans;
+        }
+
+        /// <summary>
+        /// Adds records/objects to the specified store in bulk
+        /// Waits for response
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordsToBulkAdd">An instance of StoreRecord that provides the store name and the data to add</param>
+        /// <returns></returns>
+        public async Task<BlazorDbEvent> BulkAddRecordAsync<T>(string storeName, IEnumerable<T> recordsToBulkAdd)
+        {
+            var trans = GenerateTransaction();
+            try
+            {
+                await CallJavascriptVoid(IndexedDbFunctions.BULKADD_ITEM, trans.trans, DbName, storeName, recordsToBulkAdd);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans.trans, true, e.Message);
+            }
+            return await trans.task;
+        }
+
+        /// <summary>
         /// Puts a new record/object to the specified store
         /// </summary>
         /// <typeparam name="T"></typeparam>

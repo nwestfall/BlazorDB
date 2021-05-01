@@ -63,6 +63,16 @@ window.blazorDB = {
             });
         });
     },
+    bulkAddItem: function(dotnetReference, transaction, dbName, storeName, items) {
+        window.blazorDB.getTable(dbName, storeName).then(table => {
+            table.bulkAdd(items).then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item(s) bulk added');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item(s) could not be bulk added');
+            });
+        });
+    },
     putItem: function(dotnetReference, transaction, item) {
         window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
             table.put(item.record).then(_ => {
