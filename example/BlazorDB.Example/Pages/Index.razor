@@ -1,10 +1,12 @@
-﻿@page "/"
+@page "/"
 @inject IJSRuntime JSRuntime;
 @inject IBlazorDbFactory _dbFactory;
 
 <h1>Person</h1>
 <button @onclick="SwitchToPerson">Switch</button>
 <button @onclick="Create">Create DB</button>
+<button @onclick="Add">Add</button>
+<button @onclick="Put">Put</button>
 <button @onclick="Add100">Add 100</button>
 <button @onclick="Add100Async">Add 100 (Async)</button>
 <button @onclick="Update">Update</button>
@@ -19,6 +21,8 @@
 <h1>Item</h1>
 <button @onclick="SwitchToItem">Switch</button>
 <button @onclick="Create">Create DB</button>
+<button @onclick="Add">Add</button>
+<button @onclick="Put">Put</button>
 <button @onclick="Add100">Add 100</button>
 <button @onclick="Add100Async">Add 100 (Async)</button>
 <button @onclick="Update">Update</button>
@@ -62,6 +66,24 @@
     {
         Console.WriteLine("Create");
         await manager.OpenDb();
+    }
+
+    protected async Task Add()
+    {
+        await manager.AddRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Action ="Add" }
+            });
+    }
+
+    protected async Task Put()
+    {
+        await manager.PutRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Id = 1, Name = "MyName, modified", Action = "Put", Age = 55 }
+            });
     }
 
     protected async Task Add100()

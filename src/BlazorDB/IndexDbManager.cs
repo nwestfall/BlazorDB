@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -119,6 +119,49 @@ namespace BlazorDB
             {
                 recordToAdd.DbName = DbName;
                 await CallJavascriptVoid(IndexedDbFunctions.ADD_ITEM, trans.trans, recordToAdd);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans.trans, true, e.Message);
+            }
+            return await trans.task;
+        }
+
+        /// <summary>
+        /// Puts a new record/object to the specified store
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordToPut">An instance of StoreRecord that provides the store name and the data to put</param>
+        /// <returns></returns>
+        public async Task<Guid> PutRecord<T>(StoreRecord<T> recordToPut, Action<BlazorDbEvent> action = null)
+        {
+            var trans = GenerateTransaction(action);
+            try
+            {
+                recordToPut.DbName = DbName;
+                await CallJavascriptVoid(IndexedDbFunctions.PUT_ITEM, trans, recordToPut);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans, true, e.Message);
+            }
+            return trans;
+        }
+
+        /// <summary>
+        /// Puts a new record/object to the specified store
+        /// Waits for response
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordToPut">An instance of StoreRecord that provides the store name and the data to put</param>
+        /// <returns></returns>
+        public async Task<BlazorDbEvent> PutRecordAsync<T>(StoreRecord<T> recordToPut)
+        {
+            var trans = GenerateTransaction();
+            try
+            {
+                recordToPut.DbName = DbName;
+                await CallJavascriptVoid(IndexedDbFunctions.PUT_ITEM, trans.trans, recordToPut);
             }
             catch (JSException e)
             {
