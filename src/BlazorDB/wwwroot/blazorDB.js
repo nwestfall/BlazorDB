@@ -63,6 +63,26 @@ window.blazorDB = {
             });
         });
     },
+    bulkAddItem: function(dotnetReference, transaction, dbName, storeName, items) {
+        window.blazorDB.getTable(dbName, storeName).then(table => {
+            table.bulkAdd(items).then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item(s) bulk added');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item(s) could not be bulk added');
+            });
+        });
+    },
+    putItem: function(dotnetReference, transaction, item) {
+        window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+            table.put(item.record).then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Item put successful');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Item put failed');
+            });
+        });
+    },
     updateItem: function(dotnetReference, transaction, item) {
         window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
             table.update(item.key, item.record).then(_ => {
@@ -86,9 +106,9 @@ window.blazorDB = {
     findItem: function(dotnetReference, transaction, item) {
         var promise = new Promise((resolve, reject) => {
             window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
-                table.get(item.key).then(_ => {
+                table.get(item.key).then(i => {
                     dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Found item');
-                    resolve(_);
+                    resolve(i);
                 }).catch(e => {
                     console.error(e);
                     dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Could not find item');
@@ -97,6 +117,20 @@ window.blazorDB = {
             });
         });
         return promise;
+    },
+    toArray: function(dotnetReference, transaction, dbName, storeName) {
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getTable(dbName, storeName).then(table => {
+                table.toArray(items => {
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'toArray succeeded');
+                    resolve(items);
+                }).catch(e => {
+                    console.error(e);
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'toArray failed');
+                    reject(e);
+                });
+            });
+        });
     },
     getDb: function(dbName) {
         return new Promise((resolve, reject) => {

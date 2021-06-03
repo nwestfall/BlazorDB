@@ -1,17 +1,22 @@
-﻿@page "/"
+@page "/"
 @inject IJSRuntime JSRuntime;
 @inject IBlazorDbFactory _dbFactory;
 
 <h1>Person</h1>
 <button @onclick="SwitchToPerson">Switch</button>
 <button @onclick="Create">Create DB</button>
+<button @onclick="Add">Add</button>
+<button @onclick="Put">Put</button>
 <button @onclick="Add100">Add 100</button>
 <button @onclick="Add100Async">Add 100 (Async)</button>
+<button @onclick="BulkAdd">BulkAdd 10,000</button>
+<button @onclick="BulkAddAsync">BulkAdd 10,000 (Async)</button>
 <button @onclick="Update">Update</button>
 <button @onclick="UpdateAsync">Update (Async)</button>
 <button @onclick="Delete">Delete</button>
 <button @onclick="DeleteAsync">Delete (Async)</button>
 <button @onclick="GetItem">Get Item</button>
+<button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
 
@@ -19,13 +24,18 @@
 <h1>Item</h1>
 <button @onclick="SwitchToItem">Switch</button>
 <button @onclick="Create">Create DB</button>
+<button @onclick="Add">Add</button>
+<button @onclick="Put">Put</button>
 <button @onclick="Add100">Add 100</button>
 <button @onclick="Add100Async">Add 100 (Async)</button>
+<button @onclick="BulkAdd">BulkAdd 10,000</button>
+<button @onclick="BulkAddAsync">BulkAdd 10,000 (Async)</button>
 <button @onclick="Update">Update</button>
 <button @onclick="UpdateAsync">Update (Async)</button>
 <button @onclick="Delete">Delete</button>
 <button @onclick="DeleteAsync">Delete (Async)</button>
 <button @onclick="GetItem">Get Item</button>
+<button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
 
@@ -64,6 +74,24 @@
         await manager.OpenDb();
     }
 
+    protected async Task Add()
+    {
+        await manager.AddRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Action ="Add" }
+            });
+    }
+
+    protected async Task Put()
+    {
+        await manager.PutRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Id = 1, Name = "MyName, modified", Action = "Put", Age = 55 }
+            });
+    }
+
     protected async Task Add100()
     {
         for(var i = 0; i < 100; i++)
@@ -86,6 +114,18 @@
                     Record = new { Name = "MyName", Age = 20 }
                 });
         }
+    }
+
+    protected async Task BulkAdd()
+    {
+        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAdd" });
+        await manager.BulkAddRecord(storeName, records);
+    }
+
+    protected async Task BulkAddAsync()
+    {
+        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAddAsync" });
+        await manager.BulkAddRecordAsync(storeName, records);
     }
 
     protected async Task Update()
@@ -133,6 +173,15 @@
     {
         var item = await manager.GetRecordByIdAsync<int, object>(storeName, 3);
         Console.WriteLine(item);
+    }
+
+    protected async Task ToArray()
+    {
+        var items = await manager.ToArray<object>(storeName);
+        foreach (var item in items.Take(10)) {
+            Console.WriteLine(item);
+        }
+        Console.WriteLine($"Got {items.Count()} items.");
     }
 
     protected async Task DeleteDb()

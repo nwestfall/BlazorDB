@@ -128,6 +128,90 @@ namespace BlazorDB
         }
 
         /// <summary>
+        /// Adds records/objects to the specified store in bulk
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordsToBulkAdd">The data to add</param>
+        /// <returns></returns>
+        public async Task<Guid> BulkAddRecord<T>(string storeName, IEnumerable<T> recordsToBulkAdd, Action<BlazorDbEvent> action = null)
+        {
+            var trans = GenerateTransaction(action);
+            try
+            {
+                await CallJavascriptVoid(IndexedDbFunctions.BULKADD_ITEM, trans, DbName, storeName, recordsToBulkAdd);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans, true, e.Message);
+            }
+            return trans;
+        }
+
+        /// <summary>
+        /// Adds records/objects to the specified store in bulk
+        /// Waits for response
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordsToBulkAdd">An instance of StoreRecord that provides the store name and the data to add</param>
+        /// <returns></returns>
+        public async Task<BlazorDbEvent> BulkAddRecordAsync<T>(string storeName, IEnumerable<T> recordsToBulkAdd)
+        {
+            var trans = GenerateTransaction();
+            try
+            {
+                await CallJavascriptVoid(IndexedDbFunctions.BULKADD_ITEM, trans.trans, DbName, storeName, recordsToBulkAdd);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans.trans, true, e.Message);
+            }
+            return await trans.task;
+        }
+
+        /// <summary>
+        /// Puts a new record/object to the specified store
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordToPut">An instance of StoreRecord that provides the store name and the data to put</param>
+        /// <returns></returns>
+        public async Task<Guid> PutRecord<T>(StoreRecord<T> recordToPut, Action<BlazorDbEvent> action = null)
+        {
+            var trans = GenerateTransaction(action);
+            try
+            {
+                recordToPut.DbName = DbName;
+                await CallJavascriptVoid(IndexedDbFunctions.PUT_ITEM, trans, recordToPut);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans, true, e.Message);
+            }
+            return trans;
+        }
+
+        /// <summary>
+        /// Puts a new record/object to the specified store
+        /// Waits for response
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recordToPut">An instance of StoreRecord that provides the store name and the data to put</param>
+        /// <returns></returns>
+        public async Task<BlazorDbEvent> PutRecordAsync<T>(StoreRecord<T> recordToPut)
+        {
+            var trans = GenerateTransaction();
+            try
+            {
+                recordToPut.DbName = DbName;
+                await CallJavascriptVoid(IndexedDbFunctions.PUT_ITEM, trans.trans, recordToPut);
+            }
+            catch (JSException e)
+            {
+                RaiseEvent(trans.trans, true, e.Message);
+            }
+            return await trans.task;
+        }
+
+        /// <summary>
         /// Updates and existing record
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -175,7 +259,7 @@ namespace BlazorDB
         /// </summary>
         /// <typeparam name="TInput"></typeparam>
         /// <typeparam name="TResult"></typeparam>
-        /// <param name="storeName">The name of the  store to retrieve the record from</param>
+        /// <param name="storeName">The name of the store to retrieve the record from</param>
         /// <param name="id">the id of the record</param>
         /// <returns></returns>
         public async Task<TResult> GetRecordByIdAsync<TInput, TResult>(string storeName, TInput key)
@@ -193,6 +277,28 @@ namespace BlazorDB
             }
 
             return default(TResult);
+        }
+        
+        /// <summary>
+        /// Retrieve all the records in a store
+        /// </summary>
+        /// <typeparam name="TRecord"></typeparam>
+        /// <param name="storeName">The name of the store to retrieve the records from</param>
+        /// <returns></returns>
+        public async Task<IList<TRecord>> ToArray<TRecord>(string storeName)
+        {
+            var trans = GenerateTransaction(null);
+
+            try
+            {
+                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.TOARRAY, trans, DbName, storeName);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+
+            return default;
         }
         
         /// <summary>
