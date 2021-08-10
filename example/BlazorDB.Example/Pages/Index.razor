@@ -19,6 +19,8 @@
 <button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
+<button @onclick="WhereName">Where Name</button>
+<button @onclick="WhereId">Where Id</button>
 
 
 <h1>Item</h1>
@@ -38,6 +40,9 @@
 <button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
+<button @onclick="WhereName">Where Name</button>
+<button @onclick="WhereId">Where Id</button>
+
 
 @code {
     IndexedDbManager manager;
@@ -188,4 +193,21 @@
     {
         await manager.DeleteDb(dbName);
     }
+
+    private async Task WhereName()
+    {
+        var items = await manager.Where<object>(storeName, "name", "YourName");
+        foreach (var item in items) {
+            Console.WriteLine(item);
+        }
+    }
+
+    private async void WhereId()
+    {
+        var items = await manager.Where<object>(storeName, "id", 1);
+        foreach (var item in items) {
+            Console.WriteLine(item);
+        }
+    }
+
 }

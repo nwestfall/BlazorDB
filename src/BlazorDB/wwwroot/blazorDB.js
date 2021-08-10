@@ -132,6 +132,21 @@ window.blazorDB = {
             });
         });
     },
+    where: function(dotnetReference, transaction, dbName, storeName, condition) {
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getDb(dbName).then(db => {
+                db[storeName].where(JSON.parse(condition)).toArray(items => {
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'where succeeded');
+                    resolve(items);
+                    
+                })
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'where failed');
+                reject(e);
+            });
+        });
+    },
     getDb: function(dbName) {
         return new Promise((resolve, reject) => {
             if(window.blazorDB.databases.find(d => d.name == dbName) === undefined) {

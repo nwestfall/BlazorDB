@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
@@ -300,7 +299,41 @@ namespace BlazorDB
 
             return default;
         }
-        
+       
+        /// <summary>
+        /// Filter a store on an indexed value 
+        /// </summary>
+        /// <param name="storeName">The name of the store to retrieve the records from</param>
+        /// <param name="key">index field name to filter on</param>
+        /// <param name="value">filter's value</param>
+        /// <returns></returns>
+        public async Task<IList<TRecord>> Where<TRecord>(string storeName, string key, object value)
+        {
+            var trans = GenerateTransaction(null);
+
+            try
+            {
+                
+                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.WHERE,  trans, DbName, storeName, FormatConditionJsonString(key, value));
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+
+            return default;
+        }
+
+        private string FormatConditionJsonString(string key, object value)
+        {
+            if (value is string)
+            {
+                return $"{{ \"{key}\": \"{value}\" }}";
+            }
+            
+            return $"{{ \"{key}\": {value} }}";
+        }
+
         /// <summary>
         /// Deletes a record from the store based on the id
         /// </summary>
