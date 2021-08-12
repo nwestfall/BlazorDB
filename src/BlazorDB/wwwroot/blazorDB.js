@@ -132,13 +132,20 @@ window.blazorDB = {
             });
         });
     },
-    where: function(dotnetReference, transaction, dbName, storeName, condition) {
+    createFilterObject: function (filters) {
+        const jsonFilter = {};
+        for (const filter in filters) {
+            if (filters.hasOwnProperty(filter))
+                jsonFilter[filters[filter].indexName] = filters[filter].filterValue;
+        }
+        return jsonFilter;
+    }, where: function(dotnetReference, transaction, dbName, storeName, filters) {
+        const filterObject = this.createFilterObject(filters);
         return new Promise((resolve, reject) => {
-            window.blazorDB.getDb(dbName).then(db => {
-                db[storeName].where(JSON.parse(condition)).toArray(items => {
+            window.blazorDB.getTable(dbName, storeName).then(table => {
+                table.where(filterObject).toArray(items => {
                     dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'where succeeded');
                     resolve(items);
-                    
                 })
             }).catch(e => {
                 console.error(e);
