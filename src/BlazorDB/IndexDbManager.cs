@@ -346,6 +346,46 @@ namespace BlazorDB
             return await trans.task;
         }
 
+        /// <summary>
+        /// Clears all data from a Table but keeps the table
+        /// </summary>
+        /// <param name="storeName"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public async Task<Guid> ClearTable(string storeName, Action<BlazorDbEvent> action = null)
+        {
+            var trans = GenerateTransaction(action);
+            try
+            {
+                await CallJavascriptVoid(IndexedDbFunctions.CLEAR_TABLE, trans, DbName, storeName);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+            return trans;
+        }
+
+        /// <summary>
+        /// Clears all data from a Table but keeps the table
+        /// Wait for response
+        /// </summary>
+        /// <param name="storeName"></param>
+        /// <returns></returns>
+        public async Task<BlazorDbEvent> ClearTableAsync(string storeName)
+        {
+            var trans = GenerateTransaction();
+            try
+            {
+                await CallJavascriptVoid(IndexedDbFunctions.CLEAR_TABLE, trans.trans, DbName, storeName);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans.trans, true, jse.Message);
+            }
+            return await trans.task;
+        }
+
         [JSInvokable("BlazorDBCallback")]
         public void CalledFromJS(Guid transaction, bool failed, string message)
         {

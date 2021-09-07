@@ -103,6 +103,16 @@ window.blazorDB = {
             });
         });
     },
+    clear: function(dotnetReference, transaction, dbName, storeName) {
+        window.blazorDB.getTable(dbName, storeName).then(table => {
+            table.clear().then(_ => {
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Table cleared');
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Table could not be cleared');
+            });
+        });
+    },
     findItem: function(dotnetReference, transaction, item) {
         var promise = new Promise((resolve, reject) => {
             window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
