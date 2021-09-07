@@ -149,11 +149,11 @@ window.blazorDB = {
                 jsonFilter[filters[filter].indexName] = filters[filter].filterValue;
         }
         return jsonFilter;
-    }, where: function(dotnetReference, transaction, dbName, storeName, filters) {
+    }, where: function(dotnetReference, transaction, dbName, storeName, filters, offset, limit) {
         const filterObject = this.createFilterObject(filters);
         return new Promise((resolve, reject) => {
             window.blazorDB.getTable(dbName, storeName).then(table => {
-                table.where(filterObject).toArray(items => {
+                table.where(filterObject).offset(offset).limit(limit).toArray(items => {
                     dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'where succeeded');
                     resolve(items);
                 })

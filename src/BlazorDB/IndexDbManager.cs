@@ -308,10 +308,10 @@ namespace BlazorDB
         /// <param name="indexName">index field name to filter on</param>
         /// <param name="filterValue">filter's value</param>
         /// <returns></returns>
-        public async Task<IList<TRecord>> Where<TRecord>(string storeName, string indexName, object filterValue)
+        public async Task<IList<TRecord>> Where<TRecord>(string storeName, string indexName, object filterValue, int offset = 0, int limit = int.MaxValue)
         {
             var filters = new List<IndexFilterValue>() {new(indexName, filterValue)};
-            return await Where<TRecord>(storeName, filters);
+            return await Where<TRecord>(storeName, filters, offset, limit);
         }
         
         /// <summary>
@@ -320,14 +320,14 @@ namespace BlazorDB
         /// <param name="storeName">The name of the store to retrieve the records from</param>
         /// <param name="filters">A collection of index names and filters conditions</param>
         /// <returns></returns>
-        public async Task<IList<TRecord>> Where<TRecord>(string storeName, IEnumerable<IndexFilterValue> filters)
+        public async Task<IList<TRecord>> Where<TRecord>(string storeName, IEnumerable<IndexFilterValue> filters, int offset = 0, int limit = int.MaxValue)
         {
             var trans = GenerateTransaction(null);
 
             try
             {
                 
-                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.WHERE,  trans, DbName, storeName, filters);
+                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.WHERE,  trans, DbName, storeName, filters, offset, limit);
             }
             catch (JSException jse)
             {
