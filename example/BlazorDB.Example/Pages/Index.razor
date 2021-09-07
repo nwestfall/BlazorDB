@@ -19,6 +19,9 @@
 <button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
+<button @onclick="WhereName">Where Name</button>
+<button @onclick="WhereId">Where Id</button>
+<button @onclick="WhereNameAndId">Where Id and Name</button>
 
 
 <h1>Item</h1>
@@ -38,6 +41,10 @@
 <button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
+<button @onclick="WhereName">Where Name</button>
+<button @onclick="WhereId">Where Id</button>
+<button @onclick="WhereNameAndId">Where Id and Name</button>
+
 
 @code {
     IndexedDbManager manager;
@@ -188,4 +195,32 @@
     {
         await manager.DeleteDb(dbName);
     }
+
+    private async Task WhereName()
+    {
+        var items = await manager.Where<object>(storeName, "name", "YourName");
+        foreach (var item in items) {
+            Console.WriteLine(item);
+        }
+    }
+
+    private async void WhereId()
+    {
+        var items = await manager.Where<object>(storeName, "id", 1);
+        foreach (var item in items) {
+            Console.WriteLine(item);
+        }
+    }
+    
+    private async void WhereNameAndId()
+    {
+        var filters = new List<IndexFilterValue>();
+        filters.Add(new IndexFilterValue("id", 1));
+        filters.Add(new IndexFilterValue("name", "YourName"));
+        var items = await manager.Where<object>(storeName, filters);
+        foreach (var item in items) {
+            Console.WriteLine(item);
+        }
+    }
+
 }

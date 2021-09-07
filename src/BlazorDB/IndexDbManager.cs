@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
@@ -300,7 +300,43 @@ namespace BlazorDB
 
             return default;
         }
+
+        /// <summary>
+        /// Filter a store on an indexed value 
+        /// </summary>
+        /// <param name="storeName">The name of the store to retrieve the records from</param>
+        /// <param name="indexName">index field name to filter on</param>
+        /// <param name="filterValue">filter's value</param>
+        /// <returns></returns>
+        public async Task<IList<TRecord>> Where<TRecord>(string storeName, string indexName, object filterValue)
+        {
+            var filters = new List<IndexFilterValue>() {new(indexName, filterValue)};
+            return await Where<TRecord>(storeName, filters);
+        }
         
+        /// <summary>
+        /// Filter a store on indexed values 
+        /// </summary>
+        /// <param name="storeName">The name of the store to retrieve the records from</param>
+        /// <param name="filters">A collection of index names and filters conditions</param>
+        /// <returns></returns>
+        public async Task<IList<TRecord>> Where<TRecord>(string storeName, IEnumerable<IndexFilterValue> filters)
+        {
+            var trans = GenerateTransaction(null);
+
+            try
+            {
+                
+                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.WHERE,  trans, DbName, storeName, filters);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+
+            return default;
+        }
+
         /// <summary>
         /// Deletes a record from the store based on the id
         /// </summary>
