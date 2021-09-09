@@ -9,6 +9,7 @@ namespace BlazorDB
         public const string PUT_ITEM = "putItem";
         public const string UPDATE_ITEM = "updateItem";
         public const string DELETE_ITEM = "deleteItem";
+        public const string CLEAR_TABLE = "clear";
         public const string FIND_ITEM = "findItem";
         public const string TOARRAY = "toArray";
     }

@@ -59,14 +59,17 @@ If the call is flagged as `Async`, we will wait for the JS callback that it is c
  - `Task<BlazorDbEvent> DeleteDbAsync(string dbName)` - Delete the database and wait for it to complete
  - `Task<Guid> AddRecord<T>(StoreRecord<T> recordToAdd, Action<BlazorDbEvent> action)` - Add a record to the store, with an optional callback when complete
  - `Task<BlazorDbEvent> AddRecordAsync<T>(StoreRecord<T> recordToAdd)` - Add a record to the store and wait for it to complete
+ - `Task<Guid> BulkAddRecord<T>(string storeName, IEnumerable<T> recordsToBulkAdd, Action<BlazorDbEvent> action)` - Adds records/objects to the specified store in bulk
+ - `Task<BlazorDbEvent> BulkAddRecordAsync<T>(string storeName, IEnumerable<T> recordsToBulkAdd)` - Adds records/objects to the specified store in bulk and waits for it to complete
  - `Task<Guid> UpdateRecord<T>(UpdateRecord<T> recordToUpdate, Action<BlazorDbEvent> action)` - Update a record in the store, with an optional callback when c complete
  - `Task<BlazorDbEvent> UpdateRecordAsync(UpdateRecord<T> recordToUpdate)` - Update a record in the store and wait for it to complete
  - `Task<TResult> GetRecordByIdAsync<TInput, TResult>(string storeName, TInput key)` - Get a record by the 'id' and wait for it to return
  - `Task<Guid> DeleteRecord<TInput>(string storeName, TInput key, Action<BlazorDbEvent> action)` - Delete a record in the store by 'id', with an optional callback when complete
  - `Task<BlazorDbEvent> DeleteRecordAsync<TInput>(string storeName, TInput key)` - Delete a record in the store by 'id' and wait for it to complete
+ - `Task<BlazorDbEvent> ClearTable<TInput>(string storeName, Action<BlazorDbEvent> action)` - Clears all data from a Table but keeps the table
+ - `Task<BlazorDbEvent> ClearTableAsync<TInput>(string storeName)` - Clears all data from a Table but keeps the table and wait for it to complete
 
 ### More to Come
  - Real queries
  - Automated testing
- - Bulk add/update/delete
  - Dynamically add/remove from `IBlazorDbFactory`
