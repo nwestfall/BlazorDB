@@ -18,11 +18,18 @@ window.blazorDB = {
             if(schema.uniqueIndexes !== undefined) {
                 for(var j = 0; j < schema.uniqueIndexes.length; j++) {
                     def = def + ",";
-                    var u = schema.uniqueIndexes[j];
+                    var u = "&" + schema.uniqueIndexes[j];
                     def = def + u;
                 }
             }
-            
+            if (schema.indexes !== undefined) {
+                for (var j = 0; j < schema.indexes.length; j++) {
+                    def = def + ",";
+                    var u = schema.indexes[j];
+                    def = def + u;
+                }
+            }
+
             stores[schema.name] = def;
         }
         db.version(dbStore.version).stores(stores);
