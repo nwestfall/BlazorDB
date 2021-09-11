@@ -29,7 +29,8 @@ namespace BlazorDB.Example
                         Name = "Person",
                         PrimaryKey = "id",
                         PrimaryKeyAuto = true,
-                        UniqueIndexes = new List<string> { "name" }
+                        UniqueIndexes = new List<string> { "guid" },
+                        Indexes = new List<string> { "name" }
                     }
                 };
             });
@@ -44,7 +45,8 @@ namespace BlazorDB.Example
                         Name = "Item",
                         PrimaryKey = "id",
                         PrimaryKeyAuto = true,
-                        UniqueIndexes = new List<string> { "name" }
+                        UniqueIndexes = new List<string> { "guid" },
+                        Indexes = new List<string> { "name" }
                     }
                 };
             });
