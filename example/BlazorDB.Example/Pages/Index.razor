@@ -22,6 +22,7 @@
 <button @onclick="WhereName">Where Name</button>
 <button @onclick="WhereId">Where Id</button>
 <button @onclick="WhereNameAndId">Where Id and Name</button>
+<button @onclick="ViolateUniqueness">Violate index uniqueness</button>
 
 
 <h1>Item</h1>
@@ -44,6 +45,7 @@
 <button @onclick="WhereName">Where Name</button>
 <button @onclick="WhereId">Where Id</button>
 <button @onclick="WhereNameAndId">Where Id and Name</button>
+<button @onclick="ViolateUniqueness">Violate index uniqueness</button>
 
 @code {
     IndexedDbManager manager;
@@ -59,7 +61,7 @@
             Console.WriteLine(__.Message);
         };
     }
-    
+
     protected async void SwitchToItem()
     {
         dbName = "Test2";
@@ -83,19 +85,19 @@
     protected async Task Add()
     {
         await manager.AddRecord(new StoreRecord<object>()
-            {
-                StoreName = storeName,
-                Record = new { Name = "MyName", Age = 20, Action ="Add" }
-            });
+        {
+            StoreName = storeName,
+            Record = new { Name = "MyName", Age = 20, Action ="Add", Guid = System.Guid.NewGuid() }
+        });
     }
 
     protected async Task Put()
     {
         await manager.PutRecord(new StoreRecord<object>()
-            {
-                StoreName = storeName,
-                Record = new { Id = 1, Name = "MyName, modified", Action = "Put", Age = 55 }
-            });
+        {
+            StoreName = storeName,
+            Record = new { Id = 1, Name = "MyName, modified", Action = "Put", Age = 55, Guid = System.Guid.NewGuid() }
+        });
     }
 
     protected async Task Add100()
@@ -103,10 +105,10 @@
         for(var i = 0; i < 100; i++)
         {
             await manager.AddRecord(new StoreRecord<object>()
-                {
-                    StoreName = storeName,
-                    Record = new { Name = "MyName", Age = 20 }
-                });
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
+            });
         }
     }
 
@@ -115,54 +117,54 @@
         for(var i = 0; i < 100; i++)
         {
             await manager.AddRecordAsync(new StoreRecord<object>()
-                {
-                    StoreName = storeName,
-                    Record = new { Name = "MyName", Age = 20 }
-                });
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
+            });
         }
     }
 
     protected async Task BulkAdd()
     {
-        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAdd" });
+        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAdd", Guid = System.Guid.NewGuid() });
         await manager.BulkAddRecord(storeName, records);
     }
 
     protected async Task BulkAddAsync()
     {
-        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAddAsync" });
+        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAddAsync", Guid = System.Guid.NewGuid() });
         await manager.BulkAddRecordAsync(storeName, records);
     }
 
     protected async Task Update()
     {
         await manager.UpdateRecord(new UpdateRecord<object>()
-            {
-                StoreName = storeName,
-                Record = new { Name = "YourName", Age = 21 },
-                Key = 1
-            });
+        {
+            StoreName = storeName,
+            Record = new { Name = "YourName", Age = 21, Guid = System.Guid.NewGuid() },
+            Key = 1
+        });
     }
 
     protected async Task UpdateAsync()
     {
         await manager.UpdateRecordAsync(new UpdateRecord<object>()
-            {
-                StoreName = storeName,
-                Record = new { Name = "YourName", Age = 21 },
-                Key = 1
-            });
+        {
+            StoreName = storeName,
+            Record = new { Name = "YourName", Age = 21, Guid = System.Guid.NewGuid() },
+            Key = 1
+        });
     }
 
     protected async Task AddWithCallback()
     {
         await manager.AddRecord(new StoreRecord<object>()
-                {
-                    StoreName = storeName,
-                    Record = new { Name = "MyName", Age = 20 }
-                }, (_) => {
-                    Console.WriteLine($"{_.Transaction}-{_.Failed}-{_.Message}");
-                });
+        {
+            StoreName = storeName,
+            Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
+        }, (_) => {
+            Console.WriteLine($"{_.Transaction}-{_.Failed}-{_.Message}");
+        });
     }
 
     protected async Task Delete()
@@ -220,5 +222,20 @@
         foreach (var item in items) {
             Console.WriteLine(item);
         }
+    }
+
+    protected async Task ViolateUniqueness()
+    {
+        var duplicatedGuid = System.Guid.NewGuid();
+        await manager.AddRecord(new StoreRecord<object>()
+        {
+            StoreName = storeName,
+            Record = new { Name = "MyName", Age = 20, Action = "Add", Guid = duplicatedGuid }
+        });
+        await manager.AddRecord(new StoreRecord<object>()
+        {
+            StoreName = storeName,
+            Record = new { Name = "MyName", Age = 20, Action = "Add", Guid = duplicatedGuid }
+        });
     }
 }
