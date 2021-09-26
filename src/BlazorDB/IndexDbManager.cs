@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
@@ -12,6 +13,7 @@ namespace BlazorDB
     {
         readonly DbStore _dbStore;
         readonly IJSRuntime _jsRuntime;
+        readonly IDictionary<string, IndexedDbManager> _dbs;
         const string InteropPrefix = "window.blazorDB";
         DotNetObjectReference<IndexedDbManager> _objReference;
         IDictionary<Guid, WeakReference<Action<BlazorDbEvent>>> _transactions = new Dictionary<Guid, WeakReference<Action<BlazorDbEvent>>>();
@@ -27,11 +29,12 @@ namespace BlazorDB
         /// </summary>
         /// <param name="dbStore"></param>
         /// <param name="jsRuntime"></param>
-        internal IndexedDbManager(DbStore dbStore, IJSRuntime jsRuntime)
+        internal IndexedDbManager(DbStore dbStore, IJSRuntime jsRuntime, IDictionary<string, IndexedDbManager> dbs)
         {
             _objReference = DotNetObjectReference.Create(this);
             _dbStore = dbStore;
             _jsRuntime = jsRuntime;
+            _dbs = dbs;
         }
 
         public List<StoreSchema> Stores => _dbStore.StoreSchemas;
@@ -63,6 +66,10 @@ namespace BlazorDB
             }
             var trans = GenerateTransaction(action);
             await CallJavascriptVoid(IndexedDbFunctions.DELETE_DB, trans, dbName);
+            if (_dbStore.Dynamic)
+            {
+                _dbs.Remove(dbName);
+            }
             return trans;
         }
 
@@ -80,6 +87,57 @@ namespace BlazorDB
             }
             var trans = GenerateTransaction();
             await CallJavascriptVoid(IndexedDbFunctions.DELETE_DB, trans.trans, dbName);
+            if (_dbStore.Dynamic)
+            {
+                _dbs.Remove(dbName);
+            }
+            return await trans.task;
+        }
+
+        /// <summary>
+        /// Adds a new store schema to a dynamic database
+        /// </summary>
+        /// <param name="storeSchema">New schema to add</param>
+        /// <returns></returns>
+        public async Task<Guid> AddSchema(StoreSchema storeSchema, Action<BlazorDbEvent> action = null)
+        {
+            if (!_dbStore.Dynamic)
+            {
+                throw new ArgumentException($"Database is not dynamic. Cannot add schema.");
+            }
+
+            var trans = GenerateTransaction(action);
+            await CallJavascriptVoid(IndexedDbFunctions.ADD_SCHEMA, trans, _dbStore, storeSchema);
+            _dbStore.StoreSchemas.Add(storeSchema);
+            _dbStore.Version = _dbStore.Version + 1;
+
+            return trans;
+        }
+
+        /// <summary>
+        /// Adds a new store schema to a dynamic database
+        /// Waits for response
+        /// </summary>
+        /// <param name="storeSchema">New schema to add</param>
+        /// <returns></returns>
+        public async Task<BlazorDbEvent> AddSchemaAsync(StoreSchema storeSchema)
+        {
+            if (!_dbStore.Dynamic)
+            {
+                throw new ArgumentException($"Database is not dynamic. Cannot add schema.");
+            }
+
+            var trans = GenerateTransaction();
+            try
+            {
+                await CallJavascriptVoid(IndexedDbFunctions.ADD_SCHEMA, trans.trans, _dbStore, storeSchema);
+                _dbStore.StoreSchemas.Add(storeSchema);
+                _dbStore.Version = _dbStore.Version + 1;
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans.trans, true, jse.Message);
+            }
             return await trans.task;
         }
 

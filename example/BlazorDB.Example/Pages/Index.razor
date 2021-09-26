@@ -47,6 +47,28 @@
 <button @onclick="WhereNameAndId">Where Id and Name</button>
 <button @onclick="ViolateUniqueness">Violate index uniqueness</button>
 
+<h1>Employee (Dynamic)</h1>
+<button @onclick="SwitchToEmployee">Switch</button>
+<button @onclick="AddSchema">Add Schema</button>
+<button @onclick="Add">Add</button>
+<button @onclick="Put">Put</button>
+<button @onclick="Add100">Add 100</button>
+<button @onclick="Add100Async">Add 100 (Async)</button>
+<button @onclick="BulkAdd">BulkAdd 10,000</button>
+<button @onclick="BulkAddAsync">BulkAdd 10,000 (Async)</button>
+<button @onclick="Update">Update</button>
+<button @onclick="UpdateAsync">Update (Async)</button>
+<button @onclick="Delete">Delete</button>
+<button @onclick="DeleteAsync">Delete (Async)</button>
+<button @onclick="GetItem">Get Item</button>
+<button @onclick="ToArray">ToArray</button>
+<button @onclick="AddWithCallback">Add With Callback</button>
+<button @onclick="DeleteDb">Delete DB</button>
+<button @onclick="WhereId">Where Id</button>
+<button @onclick="WhereNameAndId">Where Id and Name</button>
+<button @onclick="ViolateUniqueness">Violate index uniqueness</button>
+
+
 @code {
     IndexedDbManager manager;
 
@@ -74,6 +96,23 @@
         dbName = "Test";
         storeName = "Person";
         manager = await _dbFactory.GetDbManager(dbName);
+    }
+
+    protected async void SwitchToEmployee()
+    {
+        dbName = "Test3";
+        storeName = "Employee";
+        manager = await _dbFactory.GetDbManager(dbName);
+        manager.ActionCompleted += (_, __) =>
+        {
+            Console.WriteLine(__.Message);
+        };
+    }
+
+    protected async void AddSchema()
+    {
+        var schema = new StoreSchema() { Name = storeName, PrimaryKey = "id", PrimaryKeyAuto = true, Indexes = { "name"}, UniqueIndexes = { "guid" } };
+        await manager.AddSchema(schema);
     }
 
     protected async Task Create()
