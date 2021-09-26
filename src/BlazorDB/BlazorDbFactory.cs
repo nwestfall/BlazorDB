@@ -61,7 +61,7 @@ namespace BlazorDB
 
         async Task BuildNewDynamic(string dbName)
         {
-            var newDbStore = new DbStore() { Name = dbName, StoreSchemas = new(), Version = 0, Dynamic = true };
+            var newDbStore = new DbStore() { Name = dbName, StoreSchemas = new List<StoreSchema>(), Version = 0, Dynamic = true };
             var newDb = new IndexedDbManager(newDbStore, _jsRuntime, _dbs);
             await newDb.OpenDb();
             newDbStore.Version = 1;
