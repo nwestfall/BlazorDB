@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
@@ -422,7 +423,7 @@ namespace BlazorDB
         }
 
         [JSInvokable("BlazorDBCallback")]
-        public void CalledFromJS(Guid transaction, bool failed, string message)
+        public void CalledFromJS(Guid transaction, bool failed, string message, JsonDocument dbResult)
         {
             if(transaction != Guid.Empty)
             {
@@ -436,7 +437,8 @@ namespace BlazorDB
                     {
                         Transaction = transaction,
                         Message = message,
-                        Failed = failed
+                        Failed = failed,
+                        DbResult = dbResult,
                     });
                     _transactions.Remove(transaction);
                 }
@@ -446,7 +448,8 @@ namespace BlazorDB
                     {
                         Transaction = transaction,
                         Message = message,
-                        Failed = failed
+                        Failed = failed,
+                        DbResult = dbResult,
                     });
                     _taskTransactions.Remove(transaction);
                 }
@@ -509,7 +512,7 @@ namespace BlazorDB
             return transaction;
         }
 
-        void RaiseEvent(Guid transaction, bool failed, string message)
-            => ActionCompleted?.Invoke(this, new BlazorDbEvent { Transaction = transaction, Failed = failed, Message = message });
+        void RaiseEvent(Guid transaction, bool failed, string message, JsonDocument recordId = null)
+            => ActionCompleted?.Invoke(this, new BlazorDbEvent { Transaction = transaction, Failed = failed, Message = message, DbResult = recordId });
     }
 }
