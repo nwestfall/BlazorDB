@@ -11,7 +11,7 @@ An easy, fast way to use IndexedDB in a Blazor application.
     <script src="_content/BlazorIndexedDB/dexie.min.js"></script>
     <script src="_content/BlazorIndexedDB/blazorDB.js"></script>
     ```
- - Add '@using BlazorDB` to `_Imports.razor`
+ - Add `@using BlazorDB` to `_Imports.razor`
  - Update `Program.cs` `ServiceCollection` with new databases (can add as many databases as you want)
     ```c#
     builder.Services.AddBlazorDB(options =>
