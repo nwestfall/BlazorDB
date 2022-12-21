@@ -25,7 +25,8 @@ An easy, fast way to use IndexedDB in a Blazor application.
                 Name = "Person",
                 PrimaryKey = "id",
                 PrimaryKeyAuto = true,
-                UniqueIndexes = new List<string> { "name" }
+                UniqueIndexes = new List<string> { "guid" },
+                Indexes = new List<string> { "name" }
             }
         };
     });
@@ -40,20 +41,25 @@ An easy, fast way to use IndexedDB in a Blazor application.
     await manager.AddRecord(new StoreRecord<object>()
     {
         StoreName = storeName,
-        Record = new { Name = "MyName", Age = 20 }
+        Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
     });
     ```
 
 ### How it works
-You defined your databases and store schemes in the `ServicesCollection`.  We add a helper called `AddBlazorDB` where you can build ` DbStore`.  From there, we ensure that an instance of `IBlazorDbFactory` is available in your service provider and will automatically add all `DbStores` and `IndexedDbManagers` based on what is defined with `AddBlazorDb`.  This allows you to have multiple databases if needed.
+You defined your databases and store schemes in the `ServicesCollection`.  We add a helper called `AddBlazorDB` where you can build ` DbStore`.  From there, we ensure that an instance of `IBlazorDbFactory` is available in your service provider and will automatically add all `DbStores` and `IndexedDbManagers` based on what is defined with `AddBlazorDb`.  This allows you to have multiple databases if needed.  The databases and store schemes in the `ServicesCollection` are "static" because they cannot be created outside of the `WebAssemblyHostBuilder`.
 
 To access any database/store, all you need to do is inject the `IBlazorDbFactory` in your page and call `GetDbManager(string dbName)`.  We will pull your `IndexedDbManager` from the factory and make sure it's created and ready.
+
+If you call `GetDbManager(string dbName)` with a database name that does not exist within the `ServicesCollection`, a "dynamic" database will be created. The database will not have any schemas until you call the manager's `AddSchemaAsync(StoreSchema storeSchema)` method to define schemas.
 
 Most calls will either be true `Async` or let you pass an `Action` in.  If it lets you pass in an `Action`, it is optional.  This `Action` will get called when the method is complete.  This way, it isn't blocking on `WASMs` single thread.  All of these calls return a `Guid` which is the "transaction" identifier to IndexeDB (it's not a true database transaction, just the call between C# and javascript that gets tracked).
 
 If the call is flagged as `Async`, we will wait for the JS callback that it is complete and then return the data.  The library takes care of this connection between javascript and C# for you.
 
 ### Available Calls
+ - `Task<string[]> GetDbNames()` - Get an array of all existing databases, both static and dynamic
+ - `Task<Guid> AddSchema(StoreSchema storeSchema, Action<BlazorDbEvent> action)` - Add a new store schema to a dynamic database, with an optional callback when complete
+ - `Task<BlazorDbEvent> AddSchemaAsync(StoreSchema storeSchema)` - Add a new store schema to a dynamic database, and wait for it to complete
  - `Task<Guid> OpenDb(Action<BlazorDbEvent> action)` - Open the IndexedDb and make sure it is created, with an optional callback when complete
  - `Task<Guid> DeleteDb(string dbName, Action<BlazorDbEvent> action)` - Delete the database, with an optional callback when complete
  - `Task<BlazorDbEvent> DeleteDbAsync(string dbName)` - Delete the database and wait for it to complete

@@ -1,7 +1,81 @@
 window.blazorDB = {
     databases: [],
-    createDb: function(dotnetReference, transaction, dbStore) {
-        if(window.blazorDB.databases.find(d => d.name == dbStore.name) !== undefined)
+    getDbNames: function () {
+        return new Promise(resolve => Dexie.getDatabaseNames().then(resolve));
+    },
+    getDbStoreDynamic: function (dbName) {
+        return new Promise((resolve, reject) => {
+            Dexie.getDatabaseNames().then(dbNames => {
+                if (dbNames.find(n => n === dbName) === undefined) {
+                    console.error("Database not found");
+                    reject("No database");
+                } else {
+                    var db = new Dexie(dbName);
+
+                    db.open().then(db => {
+                        const dbStore = {
+                            name: db.name,
+                            version: db.verno,
+                            storeSchemas: db.tables.map(table => {
+                                return {
+                                    name: table.name,
+                                    primaryKey: table.schema.primKey.name,
+                                    primaryKeyAuto: table.schema.primKey.auto,
+                                    uniqueIndexes: table.schema.indexes
+                                        .filter(index => index.unique)
+                                        .map(index => index.name),
+                                    indexes: table.schema.indexes
+                                        .filter(index => !index.unique)
+                                        .map(index => index.name)
+                                };
+                            }),
+                            dynamic: true
+                        };
+                        // Problem: when we create a dynamic db, we make it version 1 in createDb() below.
+                        // However, if we close/exit our session without adding any store schemas,
+                        // the next time we call db.open() on this dynamic db, the reported verno is 0,
+                        // rather than 1. Yet browser devtools DOES report the correct version.
+                        // Also, calling indexedDB directly will also report correct version.
+                        // (note, for unrelated reasons, Dexie version is the indexedDB version / 10,
+                        // see https://github.com/dfahlander/Dexie.js/issues/59)
+                        // To fix: when we come across verno = 0, change the version number in dbStore to 1.
+                        // dbStore needs correct version so we can increment it when a store schema is added.
+                        // This is not ideal; need to understand why Dexie reports verno 0 instead of 1.
+                        if (db.verno === 0) {
+                            dbStore.version = 1;
+                            indexedDB.databases().then(databases => {
+                                console.warn(`Dexie reports version of ${db.name} is ${db.verno}, but indexedDB reports version is ${databases.find(db1 => db1.name === db.name).version / 10}. BlazorDB will use indexedDB version number.`);
+                            });
+                        }
+                        window.blazorDB.databases.push({
+                            name: dbName,
+                            db: db
+                        });
+                        resolve(dbStore);
+                    })
+                }
+            })
+        });
+    },
+    addSchema: function (dotnetReference, transaction, dbStore, newStoreSchema) {
+        if (!dbStore.dynamic || window.blazorDB.databases.find(d => d.name === dbStore.name) === undefined) {
+            console.error(`Blazor.IndexedDB.Framework - Dynamic database ${dbStore.name} not found`);
+            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, `Dynamic database ${dbStore.name} could not be found`);
+            return;
+        }
+        var db = window.blazorDB.databases.find(d => d.name === dbStore.name).db
+        if (db.tables.map(table => table.name).find(name => name === newStoreSchema.name) !== undefined) {
+            console.error(`Blazor.IndexedDB.Framework - schema for store ${newStoreSchema.name} already exists`);
+            dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Schema already exists');
+            return;
+        }
+        db.close();
+
+        dbStore.storeSchemas.push(newStoreSchema);
+        this.createDb(dotnetReference, transaction, dbStore);
+    },
+    createDb: function (dotnetReference, transaction, dbStore) {
+        if(!dbStore.dynamic && window.blazorDB.databases.find(d => d.name === dbStore.name) !== undefined)
             console.warn("Blazor.IndexedDB.Framework - Database already exists");
 
         var db = new Dexie(dbStore.name);
@@ -32,6 +106,9 @@ window.blazorDB = {
 
             stores[schema.name] = def;
         }
+        if (dbStore.dynamic) {
+            dbStore.version = dbStore.version + 1;
+        }
         db.version(dbStore.version).stores(stores);
         if(window.blazorDB.databases.find(d => d.name == dbStore.name) !== undefined) {
             window.blazorDB.databases.find(d => d.name == dbStore.name).db = db;
@@ -41,7 +118,9 @@ window.blazorDB = {
                 db: db
             });
         }
-        db.open().then(_ => {
+        db.open().then(db => {
+            if (dbStore.dynamic)
+                window.blazorDB.databases.find(d => d.name === dbStore.name).db = db;
             dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Database opened');
         }).catch(e => {
             console.error(e);

@@ -4,6 +4,9 @@ namespace BlazorDB
     {
         public const string CREATE_DB = "createDb";
         public const string DELETE_DB = "deleteDb";
+        public const string GET_DB_NAMES = "getDbNames";
+        public const string GET_DB_STORE_DYNAMIC = "getDbStoreDynamic";
+        public const string ADD_SCHEMA = "addSchema";
         public const string ADD_ITEM = "addItem";
         public const string BULKADD_ITEM = "bulkAddItem";
         public const string PUT_ITEM = "putItem";
