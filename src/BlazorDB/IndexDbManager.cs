@@ -421,6 +421,12 @@ namespace BlazorDB
             return await trans.task;
         }
 
+        /// <summary>
+        /// Invoked from blazorDB.js when a task completes/fails
+        /// </summary>
+        /// <param name="transaction">Transaction Id.</param>
+        /// <param name="failed">Bool that represents if tasked failed.</param>
+        /// <param name="message">Error/Success message</param>
         [JSInvokable("BlazorDBCallback")]
         public void CalledFromJS(Guid transaction, bool failed, string message)
         {

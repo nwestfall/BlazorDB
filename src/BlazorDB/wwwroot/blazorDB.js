@@ -1,9 +1,10 @@
 window.blazorDB = {
     databases: [],
     createDb: function(dotnetReference, transaction, dbStore) {
-        if(window.blazorDB.databases.find(d => d.name == dbStore.name) !== undefined)
+        if (window.blazorDB.databases.find(d => d.name == dbStore.name) !== undefined) {
             console.warn("Blazor.IndexedDB.Framework - Database already exists");
-
+        }
+            
         var db = new Dexie(dbStore.name);
 
         var stores = {};
@@ -29,10 +30,21 @@ window.blazorDB = {
                     def = def + u;
                 }
             }
-
             stores[schema.name] = def;
         }
-        db.version(dbStore.version).stores(stores);
+
+        // New Code for Fork: BlazorDB-issue-11
+        // True IF a StoreSchemaUpdate object has been passed via service builder in Program.cs
+        if (dbStore.storeSchemaUpgrades !== null) {
+            // See function signature for why this is not a promise.
+            // Errors that occur in this function will be caught/logged to console when db.open() is called.
+            this.upgradeDbSchema(db, stores, dbStore);
+        }
+        else {
+            db.version(dbStore.version).stores(stores);
+        }
+        // End New Code for Fork: BlazorDB-issue-11
+
         if(window.blazorDB.databases.find(d => d.name == dbStore.name) !== undefined) {
             window.blazorDB.databases.find(d => d.name == dbStore.name).db = db;
         } else {
@@ -205,5 +217,136 @@ window.blazorDB = {
                 reject(e);
             });
         });
+    },
+    // Assumption. Only one schema update per version update
+    // Will allow multiple updates after proof of concept
+    // This function purposefully DOES NOT return a promise. This is because .upgrade() DOES NOT return a promise.
+    upgradeDbSchema: function (db, stores, dbStore) {
+            // Get information to build the update function
+            var schemaUpdate = dbStore.storeSchemaUpgrades[0];
+            //Assumption: This currently only works for 1 schema. TODO: ALLOW MULTIPLE SCHEMA UPDATES.
+            switch (schemaUpdate.upgradeAction) {
+                case 'split':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            row[schemaUpdate.columnsToReceiveDataFromAction[0]] = row[schemaUpdate.columnsToPerformActionOn[0]].split(schemaUpdate.upgradeActionParameterList[0])[0];
+                            row[schemaUpdate.columnsToReceiveDataFromAction[1]] = row[schemaUpdate.columnsToPerformActionOn[0]].split(schemaUpdate.upgradeActionParameterList[0])[1];
+                            delete row[schemaUpdate.columnsToPerformActionOn[0]];
+                        });
+                    });
+                    break;
+                case 'multiply':
+                    // Intent take value of columnsToPerformActionOn, multiple by value in upgradeActionParameterList,
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] * schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            }
+                        });
+                    });
+                    break;
+                case 'multiply-delete':
+                    // This deletes the column the value we are multiplying in in. 
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] * schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                            }
+                        });
+                    });
+                    break;
+                case 'divide':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] / schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            }
+                        });
+                    });
+                    break;
+                case 'divide-delete':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] / schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                            }
+                        });
+                    });
+                    break;
+                case 'add':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] + schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                                //delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                            }
+                        });
+                    });
+                    break;
+                case 'add-delete':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] + schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                            }
+                        });
+                    });
+                    break;
+                case 'subtract':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                                //delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                            }
+                        });
+                    });
+                    break;
+                case 'subtract-delete':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                            }
+                        });
+                    });
+                    break;
+                case 'delete-column':
+                    db.version(dbStore.version).stores(stores).upgrade(trans => {
+                        // Get the table, cast to collection, call necessary function
+                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                            // modify each row
+                            for (var i = 0; i < schemaUpdate.columnsToPerformActionOn.length; i++) {
+                                //row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                            }
+                        });
+                    });
+                    break;
+                default:
+                    console.warn('default');
+            }
     }
 }

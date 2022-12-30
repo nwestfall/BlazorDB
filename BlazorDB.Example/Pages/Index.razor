@@ -1,0 +1,248 @@
+﻿@page "/"
+@inject IJSRuntime JSRuntime;
+@inject IBlazorDbFactory _dbFactory;
+
+<h1>Person</h1>
+<button @onclick="SwitchToPerson">Switch</button>
+<button @onclick="Create">Create DB</button>
+<button @onclick="Add">Add</button>
+<button @onclick="Put">Put</button>
+<button @onclick="Add100">Add 100</button>
+<button @onclick="Add100Async">Add 100 (Async)</button>
+<button @onclick="BulkAdd">BulkAdd 10,000</button>
+<button @onclick="BulkAddAsync">BulkAdd 10,000 (Async)</button>
+<button @onclick="Update">Update</button>
+<button @onclick="UpdateAsync">Update (Async)</button>
+<button @onclick="Delete">Delete</button>
+<button @onclick="DeleteAsync">Delete (Async)</button>
+<button @onclick="GetItem">Get Item</button>
+<button @onclick="ToArray">ToArray</button>
+<button @onclick="AddWithCallback">Add With Callback</button>
+<button @onclick="DeleteDb">Delete DB</button>
+<button @onclick="WhereName">Where Name</button>
+<button @onclick="WhereId">Where Id</button>
+<button @onclick="WhereNameAndId">Where Id and Name</button>
+<button @onclick="ViolateUniqueness">Violate index uniqueness</button>
+
+
+<h1>Item</h1>
+<button @onclick="SwitchToItem">Switch</button>
+<button @onclick="Create">Create DB</button>
+<button @onclick="Add">Add</button>
+<button @onclick="Put">Put</button>
+<button @onclick="Add100">Add 100</button>
+<button @onclick="Add100Async">Add 100 (Async)</button>
+<button @onclick="BulkAdd">BulkAdd 10,000</button>
+<button @onclick="BulkAddAsync">BulkAdd 10,000 (Async)</button>
+<button @onclick="Update">Update</button>
+<button @onclick="UpdateAsync">Update (Async)</button>
+<button @onclick="Delete">Delete</button>
+<button @onclick="DeleteAsync">Delete (Async)</button>
+<button @onclick="GetItem">Get Item</button>
+<button @onclick="ToArray">ToArray</button>
+<button @onclick="AddWithCallback">Add With Callback</button>
+<button @onclick="DeleteDb">Delete DB</button>
+<button @onclick="WhereName">Where Name</button>
+<button @onclick="WhereId">Where Id</button>
+<button @onclick="WhereNameAndId">Where Id and Name</button>
+<button @onclick="ViolateUniqueness">Violate index uniqueness</button>
+
+@code {
+    IndexedDbManager manager;
+
+    string dbName = "Test";
+    string storeName = "Person";
+
+    protected override async Task OnInitializedAsync()
+    {
+        manager = await _dbFactory.GetDbManager(dbName);
+
+
+        manager.ActionCompleted += (_, __) =>
+        {
+            Console.WriteLine(__.Message);
+        };
+    }
+
+    protected async void SwitchToItem()
+    {
+        dbName = "Test2";
+        storeName = "Item";
+        manager = await _dbFactory.GetDbManager(dbName);
+    }
+
+    protected async void SwitchToPerson()
+    {
+        dbName = "Test";
+        storeName = "Person";
+        manager = await _dbFactory.GetDbManager(dbName);
+    }
+
+    protected async Task Create()
+    {
+        Console.WriteLine("Create");
+        await manager.OpenDb();
+    }
+
+    protected async Task Add()
+    {
+        await manager.AddRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Action = "Add", Guid = System.Guid.NewGuid() }
+            });
+    }
+
+    protected async Task Put()
+    {
+        await manager.PutRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Id = 1, Name = "MyName, modified", Action = "Put", Age = 55, Guid = System.Guid.NewGuid() }
+            });
+    }
+
+    protected async Task Add100()
+    {
+        for (var i = 0; i < 100; i++)
+        {
+            await manager.AddRecord(new StoreRecord<object>()
+                {
+                    StoreName = storeName,
+                    Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
+                });
+        }
+    }
+
+    protected async Task Add100Async()
+    {
+        for (var i = 0; i < 100; i++)
+        {
+            await manager.AddRecordAsync(new StoreRecord<object>()
+                {
+                    StoreName = storeName,
+                    Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
+                });
+        }
+    }
+
+    protected async Task BulkAdd()
+    {
+        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAdd", Guid = System.Guid.NewGuid() });
+        await manager.BulkAddRecord(storeName, records);
+    }
+
+    protected async Task BulkAddAsync()
+    {
+        var records = Enumerable.Range(0, 10_000).Select(x => new { Name = "MyName", Age = x, Action = "BulkAddAsync", Guid = System.Guid.NewGuid() });
+        await manager.BulkAddRecordAsync(storeName, records);
+    }
+
+    protected async Task Update()
+    {
+        await manager.UpdateRecord(new UpdateRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "YourName", Age = 21, Guid = System.Guid.NewGuid() },
+                Key = 1
+            });
+    }
+
+    protected async Task UpdateAsync()
+    {
+        await manager.UpdateRecordAsync(new UpdateRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "YourName", Age = 21, Guid = System.Guid.NewGuid() },
+                Key = 1
+            });
+    }
+
+    protected async Task AddWithCallback()
+    {
+        await manager.AddRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
+            }, (_) =>
+        {
+            Console.WriteLine($"{_.Transaction}-{_.Failed}-{_.Message}");
+        });
+    }
+
+    protected async Task Delete()
+    {
+        await manager.DeleteRecord(storeName, 2);
+    }
+
+    protected async Task DeleteAsync()
+    {
+        await manager.DeleteRecordAsync(storeName, 2);
+    }
+
+    protected async Task GetItem()
+    {
+        var item = await manager.GetRecordByIdAsync<int, object>(storeName, 3);
+        Console.WriteLine(item);
+    }
+
+    protected async Task ToArray()
+    {
+        var items = await manager.ToArray<object>(storeName);
+        foreach (var item in items.Take(10))
+        {
+            Console.WriteLine(item);
+        }
+        Console.WriteLine($"Got {items.Count()} items.");
+    }
+
+    protected async Task DeleteDb()
+    {
+        await manager.DeleteDb(dbName);
+    }
+
+    private async Task WhereName()
+    {
+        var items = await manager.Where<object>(storeName, "name", "MyName");
+        foreach (var item in items)
+        {
+            Console.WriteLine(item);
+        }
+    }
+
+    private async void WhereId()
+    {
+        var items = await manager.Where<object>(storeName, "id", 1);
+        foreach (var item in items)
+        {
+            Console.WriteLine(item);
+        }
+    }
+
+    private async void WhereNameAndId()
+    {
+        var filters = new List<IndexFilterValue>();
+        filters.Add(new IndexFilterValue("id", 1));
+        filters.Add(new IndexFilterValue("name", "MyName"));
+        var items = await manager.Where<object>(storeName, filters);
+        foreach (var item in items)
+        {
+            Console.WriteLine(item);
+        }
+    }
+
+    protected async Task ViolateUniqueness()
+    {
+        var duplicatedGuid = System.Guid.NewGuid();
+        await manager.AddRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Action = "Add", Guid = duplicatedGuid }
+            });
+        await manager.AddRecord(new StoreRecord<object>()
+            {
+                StoreName = storeName,
+                Record = new { Name = "MyName", Age = 20, Action = "Add", Guid = duplicatedGuid }
+            });
+    }
+}
