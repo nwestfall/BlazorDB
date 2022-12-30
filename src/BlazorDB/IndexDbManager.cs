@@ -300,6 +300,12 @@ namespace BlazorDB
             return default(TResult);
         }
 
+        /// <summary>
+        /// Get the min index of a store. This DOES NOT return the min primary key. 
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="storeName"></param>
+        /// <returns></returns>
         public async Task<TResult> GetMinIndex<TResult>(string storeName) 
         {
             var trans = GenerateTransaction(null);
@@ -315,6 +321,13 @@ namespace BlazorDB
             }
             return default(TResult);
         }
+
+        /// <summary>
+        /// Gets the max index of a store. This DOES NOT return the max primary key. 
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="storeName"></param>
+        /// <returns></returns>
         public async Task<TResult> GetMaxIndex<TResult>(string storeName)
         {
             var trans = GenerateTransaction(null);
@@ -331,6 +344,12 @@ namespace BlazorDB
             return default(TResult);
         }
 
+        /// <summary>
+        /// Returns the count of the records in a store. 
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="storeName"></param>
+        /// <returns></returns>
         public async Task<TResult> GetCount<TResult>(string storeName)
         {
             var trans = GenerateTransaction(null);
@@ -346,7 +365,6 @@ namespace BlazorDB
             }
             return default(TResult);
         }
-
 
         /// <summary>
         /// Retrieves the last record in a store
