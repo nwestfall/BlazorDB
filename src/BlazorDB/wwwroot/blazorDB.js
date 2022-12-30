@@ -161,6 +161,74 @@ window.blazorDB = {
             });
         });
     },
+    getFirstItem: function (dotnetReference, transaction, item) {
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+                var item = table.toCollection().first();
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'getFirstItem succeeded');
+                resolve(item);
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'getFirstItem failed');
+                reject(e);
+            });
+        });
+    },
+    getMinIndex: function (dotnetReference, transaction, item) {
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+                table.toCollection().count().then((result) => {
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'getMinIndex succeeded');
+                    resolve(result == 0 ? "Table empty" : 0);
+                });
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'getMinIndex failed');
+                reject(e);
+            });
+        });
+    },
+    getLastItem: function (dotnetReference, transaction, item) {
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+                var item = table.toCollection().last();
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'getLastItem succeeded');
+                resolve(item);
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'getLastItem failed');
+                reject(e);
+            });
+        });
+    },
+    getMaxIndex: function (dotnetReference, transaction, item) {
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+                table.toCollection().count().then((result) => {
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'getMaxIndex succeeded');
+                    resolve(result > 0 ? (result - 1) : "Table empty");
+                });
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'getMaxIndex failed');
+                reject(e);
+            });
+        });
+    },
+    count: function (dotnetReference, transaction, item) {
+        return new Promise((resolve, reject) => {
+            window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
+                table.toCollection().count().then((result) => {
+                    dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'Count succeeded');
+                    resolve(result);
+                });
+            }).catch(e => {
+                console.error(e);
+                dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, true, 'Count failed');
+                reject(e);
+            });
+        });
+    },
     getDb: function(dbName) {
         return new Promise((resolve, reject) => {
             if(window.blazorDB.databases.find(d => d.name == dbName) === undefined) {

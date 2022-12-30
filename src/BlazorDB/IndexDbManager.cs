@@ -279,6 +279,98 @@ namespace BlazorDB
         }
 
         /// <summary>
+        /// Retrieves the first record in a store
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="storeName"></param>
+        /// <returns></returns>
+        public async Task<TResult> GetFirstRecord<TResult>(string storeName)
+        {
+            var trans = GenerateTransaction(null);
+
+            var data = new { DbName = DbName, StoreName = storeName };
+            try
+            {
+                return await CallJavascript<TResult>(IndexedDbFunctions.GET_FIRST_ITEM, trans, data);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+            return default(TResult);
+        }
+
+        public async Task<TResult> GetMinIndex<TResult>(string storeName) 
+        {
+            var trans = GenerateTransaction(null);
+
+            var data = new { DbName = DbName, StoreName = storeName };
+            try
+            {
+                return await CallJavascript<TResult>(IndexedDbFunctions.GET_MIN_INDEX, trans, data);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+            return default(TResult);
+        }
+        public async Task<TResult> GetMaxIndex<TResult>(string storeName)
+        {
+            var trans = GenerateTransaction(null);
+
+            var data = new { DbName = DbName, StoreName = storeName };
+            try
+            {
+                return await CallJavascript<TResult>(IndexedDbFunctions.GET_MAX_INDEX, trans, data);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+            return default(TResult);
+        }
+
+        public async Task<TResult> GetCount<TResult>(string storeName)
+        {
+            var trans = GenerateTransaction(null);
+
+            var data = new { DbName = DbName, StoreName = storeName };
+            try
+            {
+                return await CallJavascript<TResult>(IndexedDbFunctions.COUNT, trans, data);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+            return default(TResult);
+        }
+
+
+        /// <summary>
+        /// Retrieves the last record in a store
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="storeName"></param>
+        /// <returns></returns>
+        public async Task<TResult> GetLastRecord<TResult>(string storeName)
+        {
+            var trans = GenerateTransaction(null);
+
+            var data = new { DbName = DbName, StoreName = storeName };
+            try
+            {
+                return await CallJavascript<TResult>(IndexedDbFunctions.GET_LAST_ITEM, trans, data);
+            }
+            catch (JSException jse)
+            {
+                RaiseEvent(trans, true, jse.Message);
+            }
+            return default(TResult);
+        }
+
+        /// <summary>
         /// Filter a store on an indexed value 
         /// </summary>
         /// <param name="storeName">The name of the store to retrieve the records from</param>
@@ -420,6 +512,8 @@ namespace BlazorDB
             }
             return await trans.task;
         }
+
+
 
         /// <summary>
         /// Invoked from blazorDB.js when a task completes/fails

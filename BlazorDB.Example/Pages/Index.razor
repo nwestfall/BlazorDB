@@ -16,7 +16,11 @@
 <button @onclick="Delete">Delete</button>
 <button @onclick="DeleteAsync">Delete (Async)</button>
 <button @onclick="GetItem">Get Item</button>
-<button @onclick="ToArray">ToArray</button>
+<button @onclick="GetFirstItem">Get First Item</button>
+<button @onclick="GetMinIndex">Get Min Index</button>
+<button @onclick="GetLastItem">Get Last Item</button>
+<button @onclick="GetMaxIndex">Get Max Index</button>
+<button @onclick="GetCount">Count</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
 <button @onclick="WhereName">Where Name</button>
@@ -39,6 +43,11 @@
 <button @onclick="Delete">Delete</button>
 <button @onclick="DeleteAsync">Delete (Async)</button>
 <button @onclick="GetItem">Get Item</button>
+<button @onclick="GetFirstItem">Get First Item</button>
+<button @onclick="GetMinIndex">Get Min Index</button>
+<button @onclick="GetLastItem">Get Last Item</button>
+<button @onclick="GetMaxIndex">Get Max Index</button>
+<button @onclick="GetCount">Count</button>
 <button @onclick="ToArray">ToArray</button>
 <button @onclick="AddWithCallback">Add With Callback</button>
 <button @onclick="DeleteDb">Delete DB</button>
@@ -56,7 +65,6 @@
     protected override async Task OnInitializedAsync()
     {
         manager = await _dbFactory.GetDbManager(dbName);
-
 
         manager.ActionCompleted += (_, __) =>
         {
@@ -165,9 +173,9 @@
                 StoreName = storeName,
                 Record = new { Name = "MyName", Age = 20, Guid = System.Guid.NewGuid() }
             }, (_) =>
-        {
-            Console.WriteLine($"{_.Transaction}-{_.Failed}-{_.Message}");
-        });
+    {
+    Console.WriteLine($"{_.Transaction}-{_.Failed}-{_.Message}");
+    });
     }
 
     protected async Task Delete()
@@ -184,6 +192,36 @@
     {
         var item = await manager.GetRecordByIdAsync<int, object>(storeName, 3);
         Console.WriteLine(item);
+    }
+
+    protected async Task GetFirstItem() 
+    {
+        var item = await manager.GetFirstRecord<object>(storeName);
+        Console.WriteLine(item);
+    }
+
+    protected async Task GetMinIndex()
+    {
+        var index = await manager.GetMinIndex<object>(storeName);
+        Console.WriteLine(index);
+    }
+
+    protected async Task GetLastItem()
+    {
+        var item = await manager.GetLastRecord<object>(storeName);
+        Console.WriteLine(item);
+    }
+
+    protected async Task GetMaxIndex()
+    {
+        var index = await manager.GetMaxIndex<object>(storeName);
+        Console.WriteLine(index);
+    }
+
+    protected async Task GetCount()
+    {
+        var count = await manager.GetCount<object>(storeName);
+        Console.WriteLine(count);
     }
 
     protected async Task ToArray()
