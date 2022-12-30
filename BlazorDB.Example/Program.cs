@@ -24,17 +24,6 @@ builder.Services.AddBlazorDB(options =>
             Indexes = new List<string> { "name" }
         }
     };
-    options.StoreSchemaUpgrades = new List<StoreSchemaUpgrade>()
-    {
-        new StoreSchemaUpgrade()
-        {
-            Name = "Person",
-            UpgradeAction = IndexedDbUpgradeFunctions.SPLIT_COLUMN,
-            UpgradeActionParameterList = new object[] { 'N' },
-            ColumnsToPerformActionOn = new List<string> { "name" },
-            ColumnsToReceiveDataFromAction = new List<string> { "first", "last" }
-        }
-    };
 });
 builder.Services.AddBlazorDB(options =>
 {
