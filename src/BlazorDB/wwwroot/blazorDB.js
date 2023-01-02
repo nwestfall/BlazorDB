@@ -179,7 +179,7 @@ window.blazorDB = {
             window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
                 table.toCollection().count().then((result) => {
                     dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'getMinIndex succeeded');
-                    resolve(result == 0 ? "Table empty" : 0);
+                    resolve(result == 0 ? -1 : 0);
                 });
             }).catch(e => {
                 console.error(e);
@@ -206,7 +206,7 @@ window.blazorDB = {
             window.blazorDB.getTable(item.dbName, item.storeName).then(table => {
                 table.toCollection().count().then((result) => {
                     dotnetReference.invokeMethodAsync('BlazorDBCallback', transaction, false, 'getMaxIndex succeeded');
-                    resolve(result > 0 ? (result - 1) : "Table empty");
+                    resolve(result > 0 ? (result - 1) : -1);
                 });
             }).catch(e => {
                 console.error(e);
@@ -414,7 +414,7 @@ window.blazorDB = {
                     });
                     break;
                 default:
-                    console.warn('default');
+                    console.warn('Upgrade not implemented');
             }
     }
 }

@@ -9,15 +9,29 @@ namespace BlazorDB
     /// </summary>
     public class StoreSchemaUpgrade
     {
-        // Store to upgrade
+        /// <summary>
+        /// Store to upgrade
+        /// </summary>
         public string Name { get; set; }
-        // Upgrade action to perform
+
+        /// <summary>
+        /// Upgrade action to perform
+        /// </summary>
         public string UpgradeAction { get; set; }
-        // Object to contain parameters needed to complete the action
+
+        /// <summary>
+        /// Object to contain parameters needed to complete the action
+        /// </summary>
         public object[] UpgradeActionParameterList { get; set; }
-        // List of column to perform action AND/OR delete
+
+        /// <summary>
+        /// List of column to perform action AND/OR delete
+        /// </summary>
         public List<string> ColumnsToPerformActionOn { get; set; }
-        // Column to receive data after action is performed
+
+        /// <summary>
+        /// Column to receive data after action is performed
+        /// </summary>
         public List<string> ColumnsToReceiveDataFromAction { get; set; }
     }
 }

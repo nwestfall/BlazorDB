@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorDB", "src\BlazorDB\Bl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorDB.Example", "BlazorDB.Example\BlazorDB.Example.csproj", "{A47C9FCB-70BC-4B16-B5BB-68C8F6B1012E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "example", "example", "{28E4E424-650C-45F9-A1C3-ED17E7317DFB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +26,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A47C9FCB-70BC-4B16-B5BB-68C8F6B1012E} = {28E4E424-650C-45F9-A1C3-ED17E7317DFB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C885CF82-0E03-4E96-BB65-8BC40C579CE4}
