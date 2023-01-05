@@ -32,6 +32,10 @@ namespace BlazorDB
         public Task<IndexedDbManager> GetDbManager(DbStore dbStore)
             => GetDbManager(dbStore.Name);
 
+        /// <summary>
+        /// Gets DbStore objects from service provider. Uses information users configured in program.cs.  
+        /// </summary>
+        /// <returns></returns>
         async Task BuildFromServices()
         {
             var dbStores = _serviceProvider.GetServices<DbStore>();

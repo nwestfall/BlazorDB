@@ -13,5 +13,10 @@ namespace BlazorDB
         public const string FIND_ITEM = "findItem";
         public const string TOARRAY = "toArray";
         public const string WHERE = "where";
+        public const string GET_FIRST_ITEM = "getFirstItem";
+        public const string GET_MIN_INDEX = "getMinIndex";
+        public const string GET_LAST_ITEM = "getLastItem";
+        public const string GET_MAX_INDEX = "getMaxIndex";
+        public const string COUNT = "count";
     }
 }
