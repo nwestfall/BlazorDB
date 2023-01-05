@@ -12,7 +12,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddBlazorDB(options =>
 {
     options.Name = "Test";
-    options.Version = 2;
+    options.Version = 1;
     options.StoreSchemas = new List<StoreSchema>()
     {
         new StoreSchema()
@@ -28,7 +28,7 @@ builder.Services.AddBlazorDB(options =>
 builder.Services.AddBlazorDB(options =>
 {
     options.Name = "Test2";
-    options.Version = 11;
+    options.Version = 1;
     options.StoreSchemas = new List<StoreSchema>()
     {
         new StoreSchema()

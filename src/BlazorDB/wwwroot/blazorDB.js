@@ -33,9 +33,8 @@ window.blazorDB = {
             stores[schema.name] = def;
         }
 
-        // New Code for Fork: BlazorDB-issue-11
         // True IF a StoreSchemaUpdate object has been passed via service builder in Program.cs
-        if (dbStore.storeSchemaUpgrades !== null) {
+        if (dbStore.storeSchemaUpgrades !== null && this.verifyStoreSchemaUpgrades(dbStore.storeSchemaUpgrades, db)) {
             // See function signature for why this is not a promise.
             // Errors that occur in this function will be caught/logged to console when db.open() is called.
             this.upgradeDbSchema(db, stores, dbStore);
@@ -43,7 +42,6 @@ window.blazorDB = {
         else {
             db.version(dbStore.version).stores(stores);
         }
-        // End New Code for Fork: BlazorDB-issue-11
 
         if(window.blazorDB.databases.find(d => d.name == dbStore.name) !== undefined) {
             window.blazorDB.databases.find(d => d.name == dbStore.name).db = db;
@@ -290,131 +288,443 @@ window.blazorDB = {
     // Will allow multiple updates after proof of concept
     // This function purposefully DOES NOT return a promise. This is because .upgrade() DOES NOT return a promise.
     upgradeDbSchema: function (db, stores, dbStore) {
-            // Get information to build the update function
-            var schemaUpdate = dbStore.storeSchemaUpgrades[0];
-            //Assumption: This currently only works for 1 schema. TODO: ALLOW MULTIPLE SCHEMA UPDATES.
-            switch (schemaUpdate.upgradeAction) {
-                case 'split':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            row[schemaUpdate.columnsToReceiveDataFromAction[0]] = row[schemaUpdate.columnsToPerformActionOn[0]].split(schemaUpdate.upgradeActionParameterList[0])[0];
-                            row[schemaUpdate.columnsToReceiveDataFromAction[1]] = row[schemaUpdate.columnsToPerformActionOn[0]].split(schemaUpdate.upgradeActionParameterList[0])[1];
-                            delete row[schemaUpdate.columnsToPerformActionOn[0]];
-                        });
+        // Get information to build the update function
+        var schemaUpdate = dbStore.storeSchemaUpgrades[0];
+        //Assumption: This currently only works for 1 schema. TODO: ALLOW MULTIPLE SCHEMA UPDATES.
+        switch (schemaUpdate.upgradeAction) {
+            case 'split':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        row[schemaUpdate.columnsToReceiveDataFromAction[0]] = row[schemaUpdate.columnsToPerformActionOn[0]].split(schemaUpdate.upgradeActionParameterList[0])[0];
+                        row[schemaUpdate.columnsToReceiveDataFromAction[1]] = row[schemaUpdate.columnsToPerformActionOn[0]].split(schemaUpdate.upgradeActionParameterList[0])[1];
+                        delete row[schemaUpdate.columnsToPerformActionOn[0]];
                     });
-                    break;
-                case 'multiply':
-                    // Intent take value of columnsToPerformActionOn, multiple by value in upgradeActionParameterList,
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] * schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                            }
-                        });
+                });
+                break;
+            case 'multiply':
+                // Intent take value of columnsToPerformActionOn, multiple by value in upgradeActionParameterList,
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] * schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                        }
                     });
-                    break;
-                case 'multiply-delete':
-                    // This deletes the column the value we are multiplying in in. 
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] * schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
-                            }
-                        });
+                });
+                break;
+            case 'multiply-delete': 
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] * schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                        }
                     });
-                    break;
-                case 'divide':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] / schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                            }
-                        });
+                });
+                break;
+            case 'divide':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] / schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                        }
                     });
-                    break;
-                case 'divide-delete':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] / schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
-                            }
-                        });
+                });
+                break;
+            case 'divide-delete':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] / schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                        }
                     });
-                    break;
-                case 'add':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] + schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                                //delete row[schemaUpdate.columnsToPerformActionOn[i]];
-                            }
-                        });
+                });
+                break;
+            case 'add':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] + schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            //delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                        }
                     });
-                    break;
-                case 'add-delete':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] + schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
-                            }
-                        });
+                });
+                break;
+            case 'add-delete':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] + schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                        }
                     });
-                    break;
-                case 'subtract':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                                //delete row[schemaUpdate.columnsToPerformActionOn[i]];
-                            }
-                        });
+                });
+                break;
+            case 'subtract':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            //delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                        }
                     });
-                    break;
-                case 'subtract-delete':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
-                                row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
-                            }
-                        });
+                });
+                break;
+            case 'subtract-delete':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.upgradeActionParameterList.length; i++) {
+                            row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                        }
                     });
-                    break;
-                case 'delete-column':
-                    db.version(dbStore.version).stores(stores).upgrade(trans => {
-                        // Get the table, cast to collection, call necessary function
-                        return trans.table(schemaUpdate.name).toCollection().modify(row => {
-                            // modify each row
-                            for (var i = 0; i < schemaUpdate.columnsToPerformActionOn.length; i++) {
-                                //row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
-                                delete row[schemaUpdate.columnsToPerformActionOn[i]];
-                            }
-                        });
+                });
+                break;
+            case 'delete-column':
+                db.version(dbStore.version).stores(stores).upgrade(trans => {
+                    // Get the table, cast to collection, call necessary function
+                    return trans.table(schemaUpdate.name).toCollection().modify(row => {
+                        // modify each row
+                        for (var i = 0; i < schemaUpdate.columnsToPerformActionOn.length; i++) {
+                            //row[schemaUpdate.columnsToReceiveDataFromAction[i]] = Math.round((row[schemaUpdate.columnsToPerformActionOn[i]] - schemaUpdate.upgradeActionParameterList[i]) * 100) / 100;
+                            delete row[schemaUpdate.columnsToPerformActionOn[i]];
+                        }
                     });
-                    break;
-                default:
-                    console.warn('Upgrade not implemented');
-            }
+                });
+                break;
+            default:
+                console.warn('Upgrade not implemented');
+        }
+    },
+
+    // This function verifies that the schemaUpdate (StoreSchemaUpgrade object) contains the necessary properties
+    // to function as intended.
+    verifyStoreSchemaUpgrades: function (storeSchemaUpgrades, db) {
+        var schemaUpdate = storeSchemaUpgrades[0];
+        switch (schemaUpdate.upgradeAction) {
+            case 'split':
+                try {
+                    if (!schemaUpdate.columnsToPerformActionOn.length) {
+                        console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name.");
+                        return false;
+                    }
+                    if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                        console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain two store column names.");
+                        return false;
+                    }
+                    if (!schemaUpdate.upgradeActionParameterList.length) {
+                        console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain one value/char to execute split.");
+                        return false;
+                    }
+                    if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                        console.error("The property ColumnsToPerformActionOn does not contain one column name. ColumnsToPerformActionOn should " +
+                            "contain one store column name when trying to perform the split upgrade action.");
+                        return false;
+                    }
+                    if (schemaUpdate.columnsToReceiveDataFromAction.length != 2) {
+                        console.error("The property ColumnsToRecevieDataFromAction does not contain two column names. " +
+                            "This property must contain the two column names that you want the split data to be inserted into.");
+                        return false;
+                    }
+                    if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                        console.error("The property UpgradeActionParameterList does not contain one value. " +
+                            "UpgradeActionParameterList should contain the value/char that you want to split on. ");
+                        return false;
+                    }
+                    return true;
+                }
+                catch(e) {
+                    console.error(e);
+                    return false;
+                }
+                break;
+            case 'multiply':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name " +
+                        "whose values will function as the multiplicand.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the same column " +
+                        "name as ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the multiplier.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name(multiplicand) when trying to perform the multiply upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one column name. " +
+                        "This value should be the same as ColumnsToPerformActionOn when performing the multiply upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the multiplier. ");
+                    return false;
+                }
+                return true;
+                break;
+            case 'multiply-delete':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name " +
+                        "whose values will serve as the multiplicand.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the new column " +
+                        "name that will receive the product.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the multiplier.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the multiply-delete upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one column name. " +
+                        "ColumnsToRecevieDataFromAction should contain the name of the new store column that the product will be inserted into.");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the multiplier. ");
+                    return false;
+                }
+                return true;
+                break;
+            case 'divide':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name " +
+                        "whose values will serve as the dividend.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the same column " +
+                        "name as ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the divisor.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the divide upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one column name. " +
+                        "ColumnsToRecevieDataFromAction should contain the same column name as ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the divisor.");
+                    return false;
+                }
+                return true;
+                break;
+            case 'divide-delete':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name " +
+                        "whose values will serve as the dividend.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the new column " +
+                        "name that the quotient will be inserted into.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the divisor.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the divide-delete upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one column name. " +
+                        "ColumnsToRecevieDataFromAction should contain the new store column name that you want to insert the quotient value into. ");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the divisor.");
+                    return false;
+                }
+                return true;
+                break;
+            case 'add':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name " +
+                        "whose values will serve as an addend.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the same column " +
+                        "name as ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the value you are adding to ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one store column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the add upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one column name. " +
+                        "ColumnsToRecevieDataFromAction should contain the same store column name as ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the value that you want to add to ColumnsToPerformActionOn.");
+                    return false;
+                }
+                return true;
+                break;
+            case 'add-delete':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name " +
+                        "whose values will serve as an addend.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the new store column " +
+                        "name that the sum will be entered into.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the value you are adding to ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one store column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the add-delete upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one column name. " +
+                        "ColumnsToRecevieDataFromAction should contain the new store column name that you want to insert the sum into. ");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the value that you want to add to ColumnsToPerformActionOn");
+                    return false;
+                }
+                return true;
+                break;
+            case 'subtract':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name to be the minuend.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the same store column " +
+                        "name as ColumnsToPerformActionOn.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the subtrahend.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one store column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the subtract upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one store column name. " +
+                        "ColumnsToRecevieDataFromAction should contain the same store column name as ColumnsToPerformActionOn. ");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the subtrahend.");
+                    return false;
+                }
+                return true;
+                break;
+            case 'subtract-delete':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name to be the minuend.");
+                    return false;
+                }
+                if (!schemaUpdate.columnsToReceiveDataFromAction.length) {
+                    console.error("The property ColumnsToRecevieDataFromAction is empty. ColumnsToRecevieDataFromAction should contain the new store column " +
+                        "name you want the difference inserted into.");
+                    return false;
+                }
+                if (!schemaUpdate.upgradeActionParameterList.length) {
+                    console.error("The property UpgradeActionParameterList is empty. UpgradeActionParameterList should contain the subtrahend.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one store column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the subtract-delete upgrade action.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToReceiveDataFromAction.length != 1) {
+                    console.error("The property ColumnsToRecevieDataFromAction does not contain one store column name. " +
+                        "ColumnsToRecevieDataFromAction should contain new store column name that you want the difference to be inserted into.");
+                    return false;
+                }
+                if (schemaUpdate.upgradeActionParameterList.length != 1) {
+                    console.error("The property UpgradeActionParameterList does not contain one value. " +
+                        "UpgradeActionParameterList should contain the value that you want to subract from ColumnsToPerformActionOn.");
+                    return false;
+                }
+                return true;
+                break;
+            case 'delete-column':
+                if (!schemaUpdate.columnsToPerformActionOn.length) {
+                    console.error("The property ColumnsToPerformActionOn is empty. ColumnsToPerformActionOn should contain one store column name to be deleted.");
+                    return false;
+                }
+                if (schemaUpdate.columnsToPerformActionOn.length != 1) {
+                    console.error("The property ColumnsToPerformActionOn does not contain one store column name. ColumnsToPerformActionOn should " +
+                        "contain one store column name when trying to perform the delete-column upgrade action.");
+                    return false;
+                }
+                return true;
+                break;
+            default:
+                console.error('Upgrade not implemented');
+                return false;
+        }
     }
 }

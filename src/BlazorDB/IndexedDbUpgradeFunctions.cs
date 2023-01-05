@@ -7,7 +7,8 @@ namespace BlazorDB
         /// <summary>
         /// Splits the data in one column into two new columns 
         /// 
-        /// Must include two column names in the ColumnsToReceiveDataFromAction property
+        /// ColumnsToPerformActionOn is the column that contains the data you wish to split
+        /// ColumnsToReceiveDataFromAction must include two column names which the split data will be inserted into.
         /// </summary>
         public const string SPLIT_COLUMN = "split";
 
@@ -30,6 +31,7 @@ namespace BlazorDB
         /// Divides the value of one column
         /// 
         /// ColumnsToPerformActionOn should contain the name of the column you want to divide
+        /// ColumnsToReceiveDataFromAction should contain the same column name as ColumnsToPerformActionOn
         /// </summary>
         public const string DIVIDE_COLUMN = "divide";
 
