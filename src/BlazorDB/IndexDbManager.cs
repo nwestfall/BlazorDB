@@ -1,7 +1,7 @@
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.JSInterop;
 
 namespace BlazorDB
 {
@@ -10,9 +10,10 @@ namespace BlazorDB
     /// </summary>
     public class IndexedDbManager
     {
+        readonly Lazy<Task<IJSObjectReference>> _jsModuleTask;
         readonly DbStore _dbStore;
         readonly IJSRuntime _jsRuntime;
-        const string InteropPrefix = "window.blazorDB";
+        const string InteropPrefix = "blazorDB";
         DotNetObjectReference<IndexedDbManager> _objReference;
         IDictionary<Guid, WeakReference<Action<BlazorDbEvent>>> _transactions = new Dictionary<Guid, WeakReference<Action<BlazorDbEvent>>>();
         IDictionary<Guid, TaskCompletionSource<BlazorDbEvent>> _taskTransactions = new Dictionary<Guid, TaskCompletionSource<BlazorDbEvent>>();
@@ -32,12 +33,14 @@ namespace BlazorDB
             _objReference = DotNetObjectReference.Create(this);
             _dbStore = dbStore;
             _jsRuntime = jsRuntime;
+            _jsModuleTask = new(() => _jsRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/BlazorIndexedDB/blazorDB.js").AsTask());
         }
 
         public List<StoreSchema> Stores => _dbStore.StoreSchemas;
         public int CurrentVersion => _dbStore.Version;
         public string DbName => _dbStore.Name;
-        
+
         /// <summary>
         /// Opens the IndexedDB defined in the DbStore. Under the covers will create the database if it does not exist
         /// and create the stores defined in DbStore.
@@ -304,7 +307,7 @@ namespace BlazorDB
             try
             {
 
-                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.WHERE,  trans, DbName, storeName, filters);
+                return await CallJavascript<IList<TRecord>>(IndexedDbFunctions.WHERE, trans, DbName, storeName, filters);
             }
             catch (JSException jse)
             {
@@ -313,7 +316,7 @@ namespace BlazorDB
 
             return default;
         }
-        
+
         /// <summary>
         /// Retrieve all the records in a store
         /// </summary>
@@ -335,7 +338,7 @@ namespace BlazorDB
 
             return default;
         }
-        
+
         /// <summary>
         /// Deletes a record from the store based on the id
         /// </summary>
@@ -424,13 +427,13 @@ namespace BlazorDB
         [JSInvokable("BlazorDBCallback")]
         public void CalledFromJS(Guid transaction, bool failed, string message)
         {
-            if(transaction != Guid.Empty)
+            if (transaction != Guid.Empty)
             {
                 WeakReference<Action<BlazorDbEvent>> r = null;
                 _transactions.TryGetValue(transaction, out r);
                 TaskCompletionSource<BlazorDbEvent> t = null;
                 _taskTransactions.TryGetValue(transaction, out t);
-                if(r != null && r.TryGetTarget(out Action<BlazorDbEvent> action))
+                if (r != null && r.TryGetTarget(out Action<BlazorDbEvent> action))
                 {
                     action?.Invoke(new BlazorDbEvent()
                     {
@@ -440,7 +443,7 @@ namespace BlazorDB
                     });
                     _transactions.Remove(transaction);
                 }
-                else if(t != null)
+                else if (t != null)
                 {
                     t.TrySetResult(new BlazorDbEvent()
                     {
@@ -457,13 +460,15 @@ namespace BlazorDB
 
         async Task<TResult> CallJavascript<TResult>(string functionName, Guid transaction, params object[] args)
         {
+            var _jsModuleReference = await _jsModuleTask.Value;
             var newArgs = GetNewArgs(transaction, args);
-            return await _jsRuntime.InvokeAsync<TResult>($"{InteropPrefix}.{functionName}", newArgs);
+            return await _jsModuleReference.InvokeAsync<TResult>($"{InteropPrefix}.{functionName}", newArgs);
         }
         async Task CallJavascriptVoid(string functionName, Guid transaction, params object[] args)
         {
+            var _jsModuleReference = await _jsModuleTask.Value;
             var newArgs = GetNewArgs(transaction, args);
-            await _jsRuntime.InvokeVoidAsync($"{InteropPrefix}.{functionName}", newArgs);
+            await _jsModuleReference.InvokeVoidAsync($"{InteropPrefix}.{functionName}", newArgs);
         }
 
         object[] GetNewArgs(Guid transaction, params object[] args)
@@ -471,7 +476,7 @@ namespace BlazorDB
             var newArgs = new object[args.Length + 2];
             newArgs[0] = _objReference;
             newArgs[1] = transaction;
-            for(var i = 0; i < args.Length; i++)
+            for (var i = 0; i < args.Length; i++)
                 newArgs[i + 2] = args[i];
             return newArgs;
         }
@@ -484,12 +489,12 @@ namespace BlazorDB
             do
             {
                 transaction = Guid.NewGuid();
-                if(!_taskTransactions.ContainsKey(transaction))
+                if (!_taskTransactions.ContainsKey(transaction))
                 {
                     generated = true;
                     _taskTransactions.Add(transaction, tcs);
                 }
-            } while(!generated);
+            } while (!generated);
             return (transaction, tcs.Task);
         }
 
@@ -500,12 +505,12 @@ namespace BlazorDB
             do
             {
                 transaction = Guid.NewGuid();
-                if(!_transactions.ContainsKey(transaction))
+                if (!_transactions.ContainsKey(transaction))
                 {
                     generated = true;
                     _transactions.Add(transaction, new WeakReference<Action<BlazorDbEvent>>(action));
                 }
-            } while(!generated);
+            } while (!generated);
             return transaction;
         }
 
